@@ -26,6 +26,7 @@ const Dashboard = () => {
   const [showPhotoUpload, setShowPhotoUpload] = useState(false)
   const [editingPhoto, setEditingPhoto] = useState(null)
   const [deletingPhoto, setDeletingPhoto] = useState(null)
+  const [reviewingPhoto, setReviewingPhoto] = useState(null)
 
   const stats = [
     {
@@ -112,6 +113,46 @@ const Dashboard = () => {
     if (editingPhoto) {
       updatePhoto(editingPhoto.id, updatedData)
       setEditingPhoto(null)
+    }
+  }
+
+  const handleGiveConsent = async (photoId, childName) => {
+    try {
+      await giveConsent(photoId, childName)
+      // Refresh the photo data
+      const updatedPhoto = photos.find(p => p.id === photoId)
+      if (updatedPhoto) {
+        setReviewingPhoto(updatedPhoto)
+      }
+    } catch (error) {
+      console.error('Error giving consent:', error)
+    }
+  }
+
+  const handleDenyConsent = async (photoId, childName) => {
+    try {
+      // This will trigger AI masking for the denied child
+      await revokeConsent(photoId, childName)
+      // Refresh the photo data
+      const updatedPhoto = photos.find(p => p.id === photoId)
+      if (updatedPhoto) {
+        setReviewingPhoto(updatedPhoto)
+      }
+    } catch (error) {
+      console.error('Error denying consent:', error)
+    }
+  }
+
+  const handleRevokeConsent = async (photoId, childName) => {
+    try {
+      await revokeConsent(photoId, childName)
+      // Refresh the photo data
+      const updatedPhoto = photos.find(p => p.id === photoId)
+      if (updatedPhoto) {
+        setReviewingPhoto(updatedPhoto)
+      }
+    } catch (error) {
+      console.error('Error revoking consent:', error)
     }
   }
 
@@ -300,10 +341,7 @@ const Dashboard = () => {
                           </button>
                         )}
                         <button 
-                          onClick={() => {
-                            // Navigate to parental controls for this photo
-                            window.location.href = `/controls?photo=${photo.id}`
-                          }}
+                          onClick={() => setReviewingPhoto(photo)}
                           className="text-xs bg-kindrid-100 text-kindrid-700 px-2 py-1 rounded hover:bg-kindrid-200"
                         >
                           Review
@@ -501,6 +539,193 @@ const Dashboard = () => {
               >
                 Delete Photo
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Photo Review Modal */}
+      {reviewingPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Review Photo: {reviewingPhoto.title}</h2>
+                <button
+                  onClick={() => setReviewingPhoto(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Photo Display */}
+              <div className="mb-6">
+                <div className="relative">
+                  {renderPhotoImage(reviewingPhoto)}
+                  <div className="absolute top-2 right-2 bg-white bg-opacity-90 px-2 py-1 rounded text-xs text-gray-600">
+                    {reviewingPhoto.status}
+                  </div>
+                </div>
+              </div>
+
+              {/* Photo Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Photo Information</h3>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-medium">Title:</span> {reviewingPhoto.title}</p>
+                    <p><span className="font-medium">Description:</span> {reviewingPhoto.description || 'No description'}</p>
+                    <p><span className="font-medium">Location:</span> {reviewingPhoto.location || 'No location'}</p>
+                    <p><span className="font-medium">Teacher:</span> {reviewingPhoto.teacher}</p>
+                    <p><span className="font-medium">Date:</span> {reviewingPhoto.date}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Children in Photo</h3>
+                  <div className="space-y-2">
+                    {reviewingPhoto.children.map((child) => {
+                      const hasConsent = reviewingPhoto.consentGiven.includes(child)
+                      const isPending = reviewingPhoto.consentPending.includes(child)
+                      
+                      return (
+                        <div key={child} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                          <span className="font-medium text-gray-900">{child}</span>
+                          <div className="flex space-x-2">
+                            {hasConsent ? (
+                              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                ✅ Approved
+                              </span>
+                            ) : isPending ? (
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleGiveConsent(reviewingPhoto.id, child)}
+                                  className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleDenyConsent(reviewingPhoto.id, child)}
+                                  className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                                >
+                                  Deny
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleRevokeConsent(reviewingPhoto.id, child)}
+                                className="px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                              >
+                                Revoke
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Current Consent Status Summary */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Current Consent Status</h3>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">{reviewingPhoto.consentGiven.length}</div>
+                    <div className="text-sm text-gray-600">Approved</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-yellow-600">{reviewingPhoto.consentPending.length}</div>
+                    <div className="text-sm text-gray-600">Pending</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-red-600">{reviewingPhoto.children.length - reviewingPhoto.consentGiven.length - reviewingPhoto.consentPending.length}</div>
+                    <div className="text-sm text-gray-600">Denied</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Photo Status & Processing */}
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                <h3 className="text-lg font-semibold text-blue-900 mb-3">Photo Status & AI Processing</h3>
+                <div className="space-y-2 text-sm text-blue-800">
+                  <p><span className="font-medium">Current Status:</span> {getStatusText(reviewingPhoto.status)}</p>
+                  <p><span className="font-medium">AI Processed:</span> {reviewingPhoto.aiProcessed ? 'Yes' : 'No'}</p>
+                  {reviewingPhoto.status === 'ai_processing' && (
+                    <div className="flex items-center space-x-2 text-purple-600">
+                      <Brain className="w-4 h-4" />
+                      <span>AI is processing this photo...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Consent Actions & Identity Protection */}
+              <div className="mb-6 p-4 bg-green-50 rounded-lg">
+                <h3 className="text-lg font-semibold text-green-900 mb-3">Consent Actions & Identity Protection</h3>
+                <div className="space-y-3 text-sm text-green-800">
+                  <p><strong>When you approve a child:</strong></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Their face remains visible in the photo</li>
+                    <li>They can be identified by other approved parents</li>
+                    <li>Photo is shared normally</li>
+                  </ul>
+                  
+                  <p><strong>When you deny consent:</strong></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>ClassVault™ AI will attempt to remove them from the photo</li>
+                    <li>If removal isn't possible, AI applies artistic filters to mask their identity</li>
+                    <li>Original photo is preserved for future consent approval</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Masking Options for Denied Consent */}
+              {reviewingPhoto.children.some(child => 
+                !reviewingPhoto.consentGiven.includes(child) && 
+                !reviewingPhoto.consentPending.includes(child)
+              ) && (
+                <div className="mb-6 p-4 bg-purple-50 rounded-lg">
+                  <h3 className="text-lg font-semibold text-purple-900 mb-3">AI Identity Masking Applied</h3>
+                  <div className="space-y-2 text-sm text-purple-800">
+                    <p><strong>Children without consent are being protected by ClassVault™ AI:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>AI attempts to remove denied children and rebuild background</li>
+                      <li>If removal fails, artistic filters mask their identity</li>
+                      <li>Original photo is preserved for future consent changes</li>
+                      <li>Processing may take a few minutes</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* What Happens Next */}
+              <div className="mb-6 p-4 bg-yellow-50 rounded-lg">
+                <h3 className="text-lg font-semibold text-yellow-900 mb-3">What Happens Next</h3>
+                <div className="space-y-2 text-sm text-yellow-800">
+                  <p><strong>After consent decisions:</strong></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>AI processes the photo based on consent decisions</li>
+                    <li>Denied children are masked or removed</li>
+                    <li>Approved children remain visible</li>
+                    <li>You'll receive a notification when processing is complete</li>
+                    <li>You can change consent decisions at any time</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setReviewingPhoto(null)}
+                  className="btn-primary px-6 py-2"
+                >
+                  Close Review
+                </button>
+              </div>
             </div>
           </div>
         </div>

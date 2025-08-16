@@ -181,13 +181,16 @@ export const PhotoProvider = ({ children }) => {
     return newPhoto
   }
 
-  const giveConsent = (photoId, childName) => {
+  const giveConsent = async (photoId, childName) => {
     if (!canManageConsent(photos.find(p => p.id === photoId))) {
       console.error('User cannot manage consent for this photo')
       return
     }
 
+    // Update consent status
     demoPhotoService.updatePhotoConsent(photoId, childName, 'give')
+    
+    // Update local state
     setPhotos(prev =>
       prev.map(photo =>
         photo.id === photoId
@@ -206,26 +209,61 @@ export const PhotoProvider = ({ children }) => {
               ...photo,
               consentGiven: [...photo.consentGiven, childName],
               consentPending: photo.consentPending.filter(child => child !== childName)
-            }
+          }
           : photo
       )
     )
+
+    // Check if all children now have consent - if so, trigger AI processing
+    const photo = photos.find(p => p.id === photoId)
+    if (photo) {
+      const updatedPhoto = {
+        ...photo,
+        consentGiven: [...photo.consentGiven, childName],
+        consentPending: photo.consentPending.filter(child => child !== childName)
+      }
+      
+      if (updatedPhoto.consentPending.length === 0 && updatedPhoto.consentGiven.length === updatedPhoto.children.length) {
+        // All children have consent, trigger AI processing to restore original photo
+        try {
+          console.log('PhotoContext: All children approved, triggering AI processing to restore photo')
+          const result = await reprocessPhotoForConsent(photoId, 'approve_all', childName)
+          
+          if (result && result.success) {
+            console.log('PhotoContext: AI processing completed for full approval')
+            setPhotos(prev =>
+              prev.map(photo =>
+                photo.id === photoId
+                  ? { ...photo, status: 'approved', aiProcessed: true }
+                  : photo
+              )
+            )
+          }
+        } catch (error) {
+          console.error('PhotoContext: AI processing failed for full approval:', error)
+        }
+      }
+    }
   }
 
-  const revokeConsent = (photoId, childName) => {
+  const revokeConsent = async (photoId, childName) => {
     if (!canManageConsent(photos.find(p => p.id === photoId))) {
       console.error('User cannot manage consent for this photo')
       return
     }
 
+    // Update consent status
     demoPhotoService.updatePhotoConsent(photoId, childName, 'revoke')
-    setPhotos(prev =>
+    
+    // Update local state
+    const updatedPhoto = setPhotos(prev =>
       prev.map(photo =>
         photo.id === photoId
           ? {
               ...photo,
               consentGiven: photo.consentGiven.filter(child => child !== childName),
-              consentPending: [...photo.consentPending, childName]
+              consentPending: [...photo.consentPending, childName],
+              status: 'ai_processing' // Mark as processing
             }
           : photo
       )
@@ -241,6 +279,34 @@ export const PhotoProvider = ({ children }) => {
           : photo
       )
     )
+
+    // Trigger AI processing to mask the revoked child
+    try {
+      console.log('PhotoContext: Triggering AI processing for revoked consent:', photoId, childName)
+      const result = await reprocessPhotoForConsent(photoId, 'revoke', childName)
+      
+      if (result && result.success) {
+        console.log('PhotoContext: AI processing completed for revoked consent')
+        // Update photo status to completed
+        setPhotos(prev =>
+          prev.map(photo =>
+            photo.id === photoId
+              ? { ...photo, status: 'approved', aiProcessed: true }
+              : photo
+          )
+        )
+      }
+    } catch (error) {
+      console.error('PhotoContext: AI processing failed for revoked consent:', error)
+      // Revert status if AI processing fails
+      setPhotos(prev =>
+        prev.map(photo =>
+          photo.id === photoId
+            ? { ...photo, status: 'ai_failed' }
+            : photo
+        )
+      )
+    }
   }
 
   const deletePhoto = (photoId) => {
