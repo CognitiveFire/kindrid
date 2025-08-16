@@ -29,11 +29,13 @@ const Header = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3">
-            <img
-              src="/kindrid-icon.svg"
-              alt="Kindrid"
-              className="w-16 h-16 object-contain"
-            />
+            <div className="w-12 h-12 bg-kindrid-600 rounded-lg flex items-center justify-center shadow-md">
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                <div className="w-4 h-4 bg-kindrid-600 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+              </div>
+            </div>
             <span className="text-2xl font-bold text-kindrid-600">Kindrid</span>
           </Link>
 
