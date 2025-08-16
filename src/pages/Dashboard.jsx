@@ -1,0 +1,512 @@
+import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { usePhotos } from '../contexts/PhotoContext'
+import PhotoUpload from '../components/PhotoUpload'
+import demoPhotoService from '../services/demoPhotoService'
+import { Camera, Plus, Users, Share2, Eye, AlertCircle, CheckCircle, XCircle, Brain, Sparkles, User, Shield, Edit, Trash2 } from 'lucide-react'
+
+const Dashboard = () => {
+  const { user } = useAuth()
+  const { 
+    photos, 
+    pendingConsent, 
+    aiProcessing, 
+    aiStats, 
+    giveConsent, 
+    userRole, 
+    userChildren, 
+    canManageConsent,
+    getPhotosForUser,
+    switchUserRole,
+    revokeConsent,
+    deletePhoto,
+    updatePhoto
+  } = usePhotos()
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false)
+  const [editingPhoto, setEditingPhoto] = useState(null)
+  const [deletingPhoto, setDeletingPhoto] = useState(null)
+
+  const stats = [
+    {
+      title: 'Total Photos',
+      value: photos.length,
+      icon: Camera,
+      color: 'bg-kindrid-500',
+      change: '+12% from last month'
+    },
+    {
+      title: 'Pending Consent',
+      value: pendingConsent.length,
+      icon: AlertCircle,
+      color: 'bg-yellow-500',
+      change: 'Requires attention'
+    },
+    {
+      title: 'Consent Given',
+      value: photos.reduce((total, photo) => total + photo.consentGiven.length, 0),
+      icon: CheckCircle,
+      color: 'bg-green-500',
+      change: '+8% from last month'
+    },
+    {
+      title: 'AI Processing',
+      value: aiStats.processing,
+      icon: Brain,
+      color: 'bg-purple-500',
+      change: aiProcessing ? 'Processing...' : 'All processed'
+    }
+  ]
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'approved':
+        return <CheckCircle className="w-5 h-5 text-green-500" />
+      case 'pending_consent':
+        return <AlertCircle className="w-5 h-5 text-yellow-500" />
+      case 'ai_processing':
+        return <Brain className="w-5 h-5 text-purple-500" />
+      case 'ai_failed':
+        return <XCircle className="w-5 h-5 text-red-500" />
+      default:
+        return <AlertCircle className="w-5 h-5 text-gray-500" />
+    }
+  }
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'approved':
+        return 'Approved'
+      case 'pending_consent':
+        return 'Pending Consent'
+      case 'ai_processing':
+        return 'AI Processing'
+      case 'ai_failed':
+        return 'AI Failed'
+      default:
+        return 'Unknown'
+    }
+  }
+
+  const handleRoleSwitch = () => {
+    const newRole = userRole === 'teacher' ? 'parent' : 'teacher'
+    switchUserRole(newRole)
+  }
+
+  const handleEditPhoto = (photo) => {
+    setEditingPhoto(photo)
+  }
+
+  const handleDeletePhoto = (photo) => {
+    setDeletingPhoto(photo)
+  }
+
+  const confirmDelete = () => {
+    if (deletingPhoto) {
+      deletePhoto(deletingPhoto.id)
+      setDeletingPhoto(null)
+    }
+  }
+
+  const handleSaveEdit = (updatedData) => {
+    if (editingPhoto) {
+      updatePhoto(editingPhoto.id, updatedData)
+      setEditingPhoto(null)
+    }
+  }
+
+  const renderPhotoImage = (photo) => {
+    if (photo.url) {
+      // Check if it's a data URL (SVG placeholder)
+      if (photo.url.startsWith('data:')) {
+        return (
+          <img 
+            src={photo.url} 
+            alt={photo.title}
+            className="w-full h-48 object-cover"
+          />
+        )
+      }
+      // Check if it's a blob URL
+      if (photo.url.startsWith('blob:')) {
+        return (
+          <img 
+            src={photo.url} 
+            alt={photo.title}
+            className="w-full h-48 object-cover"
+          />
+        )
+      }
+      // Check if it's a regular file path (like /1.jpg, /2.jpg, etc.)
+      if (photo.url.startsWith('/')) {
+        return (
+          <img 
+            src={photo.url} 
+            alt={photo.title}
+            className="w-full h-48 object-cover"
+          />
+        )
+      }
+    }
+    
+    // Fallback placeholder
+    return (
+      <div className="w-full h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+        <div className="text-center">
+          <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+          <p className="text-xs text-gray-500">{photo.title}</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Role Switcher */}
+      <div className="mb-6 flex justify-center">
+        <button
+          onClick={handleRoleSwitch}
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          Switch to {userRole === 'teacher' ? 'Parent' : 'Teacher'} View
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {stats.map((stat, index) => (
+          <div key={index} className="card">
+            <div className="flex items-center">
+              <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
+                <stat.icon className="w-6 h-6 text-white" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+                <p className="text-xs text-gray-500">{stat.change}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* AI Processing Status */}
+      {aiStats.processing > 0 && (
+        <div className="card mb-8 bg-gradient-to-r from-purple-50 to-kindrid-50 border-purple-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Brain className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">AI Processing Active</h3>
+                <p className="text-gray-600">
+                  {aiStats.processing} photos are being processed by ClassVault™ AI
+                </p>
+              </div>
+            </div>
+            <Link to="/ai-tools" className="btn-primary flex items-center space-x-2">
+              <Sparkles className="w-4 h-4" />
+              <span>View AI Tools</span>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Actions */}
+      <div className="card mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {userRole === 'teacher' && (
+            <button 
+              onClick={() => setShowPhotoUpload(true)} 
+              className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <Plus className="w-5 h-5 text-kindrid-600" />
+              <span>Upload Photos</span>
+            </button>
+          )}
+          <Link to="/gallery" className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <Eye className="w-5 h-5 text-kindrid-600" />
+            <span>Review Photos</span>
+          </Link>
+          <Link to="/ai-tools" className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <Sparkles className="w-5 h-5 text-kindrid-600" />
+            <span>AI Tools</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* Recent Photos */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Photos</h2>
+          <Link to="/gallery" className="text-kindrid-600 hover:text-kindrid-700 text-sm font-medium">
+            View All
+          </Link>
+        </div>
+        
+        {getPhotosForUser().length === 0 ? (
+          <div className="text-center py-8">
+            <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">
+              {userRole === 'teacher' 
+                ? 'No photos uploaded yet' 
+                : 'No photos featuring your children yet'
+              }
+            </p>
+            {userRole === 'teacher' && (
+              <button onClick={() => setShowPhotoUpload(true)} className="mt-4 btn-primary">
+                <Plus className="w-4 h-4 mr-2" />
+                Upload Your First Photo
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {getPhotosForUser().slice(0, 6).map((photo) => (
+              <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="aspect-w-16 aspect-h-9 bg-gray-100">
+                  {renderPhotoImage(photo)}
+                </div>
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium text-gray-900 truncate">{photo.title}</h3>
+                    {getStatusIcon(photo.status)}
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">{photo.description}</p>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{photo.date}</span>
+                    <span>{getStatusText(photo.status)}</span>
+                  </div>
+                  
+                  {photo.status === 'pending_consent' && canManageConsent(photo) && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <p className="text-xs text-gray-600 mb-2">
+                        Pending consent for: {photo.consentPending.join(', ')}
+                      </p>
+                      <div className="flex space-x-2">
+                        {userRole === 'teacher' && (
+                          <button 
+                            onClick={() => {
+                              // Approve all pending children
+                              photo.consentPending.forEach(childName => {
+                                giveConsent(photo.id, childName)
+                              })
+                            }}
+                            className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
+                          >
+                            Approve All
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => {
+                            // Navigate to parental controls for this photo
+                            window.location.href = `/controls?photo=${photo.id}`
+                          }}
+                          className="text-xs bg-kindrid-100 text-kindrid-700 px-2 py-1 rounded hover:bg-kindrid-200"
+                        >
+                          Review
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Edit/Delete Actions for Teachers */}
+                  {userRole === 'teacher' && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex space-x-2">
+                      <button
+                        onClick={() => handleEditPhoto(photo)}
+                        className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 flex items-center"
+                      >
+                        <Edit className="w-3 h-3 mr-1" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeletePhoto(photo)}
+                        className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Delete
+                      </button>
+                    </div>
+                  )}
+
+                  {/* AI Processing indicator */}
+                  {photo.status === 'ai_processing' && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center space-x-2 text-xs text-purple-600">
+                        <Brain className="w-3 h-3" />
+                        <span>AI Processing...</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Photo Upload Modal */}
+      {showPhotoUpload && (
+        <PhotoUpload onClose={() => setShowPhotoUpload(false)} />
+      )}
+
+      {/* Edit Photo Modal */}
+      {editingPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Edit Photo</h2>
+                <button
+                  onClick={() => setEditingPhoto(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.target)
+                const updatedData = {
+                  title: formData.get('title'),
+                  description: formData.get('description'),
+                  location: formData.get('location'),
+                  teacher: formData.get('teacher'),
+                  children: formData.get('children').split(',').map(name => name.trim()).filter(name => name.length > 0),
+                  tags: formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+                }
+                handleSaveEdit(updatedData)
+              }} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="title" className="form-label">Title</label>
+                    <input
+                      type="text"
+                      id="title"
+                      name="title"
+                      defaultValue={editingPhoto.title}
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="location" className="form-label">Location</label>
+                    <input
+                      type="text"
+                      id="location"
+                      name="location"
+                      defaultValue={editingPhoto.location}
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="description" className="form-label">Description</label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    defaultValue={editingPhoto.description}
+                    className="input-field"
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="teacher" className="form-label">Teacher</label>
+                    <input
+                      type="text"
+                      id="teacher"
+                      name="teacher"
+                      defaultValue={editingPhoto.teacher}
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="children" className="form-label">Children</label>
+                    <input
+                      type="text"
+                      id="children"
+                      name="children"
+                      defaultValue={editingPhoto.children.join(', ')}
+                      className="input-field"
+                      placeholder="Emma, Lucas, Sophia"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="tags" className="form-label">Tags</label>
+                  <input
+                    type="text"
+                    id="tags"
+                    name="tags"
+                    defaultValue={editingPhoto.tags.join(', ')}
+                    className="input-field"
+                    placeholder="first-day, classroom, fun"
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditingPhoto(null)}
+                    className="btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Delete Photo</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete "{deletingPhoto.title}"? This action cannot be undone.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setDeletingPhoto(null)}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="btn-primary bg-red-600 hover:bg-red-700 flex-1"
+              >
+                Delete Photo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default Dashboard
