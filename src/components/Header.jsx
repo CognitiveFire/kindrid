@@ -30,10 +30,11 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3">
             <img
-              src="/kindrid logo.png"
+              src="/kindrid-icon.svg"
               alt="Kindrid"
-              className="w-24 h-24 object-contain"
+              className="w-16 h-16 object-contain"
             />
+            <span className="text-2xl font-bold text-kindrid-600">Kindrid</span>
           </Link>
 
           {/* Desktop Navigation */}
