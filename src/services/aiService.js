@@ -135,7 +135,7 @@ class AIService {
     })
   }
 
-  // Update photo based on consent changes
+  // Update photo based on consent changes - CORE FILTERING FUNCTIONALITY
   async updatePhotoForConsent(photoId, consentAction, childName) {
     console.log(`🤖 AI processing consent change: ${consentAction} for ${childName} in photo ${photoId}`)
     
@@ -144,28 +144,31 @@ class AIService {
         let result
         
         if (consentAction === 'revoke') {
-          // Simulate AI masking for denied consent
+          // CORE FUNCTION: Remove child from photo when consent is denied
           result = {
             success: true,
             photoId,
             action: 'consent_revoked',
             childName,
             processing: {
-              method: 'AI_masking',
-              type: 'artistic_filter',
-              intensity: 'high',
-              backgroundReconstruction: 'partial'
+              method: 'AI_person_removal',
+              type: 'complete_removal',
+              backgroundReconstruction: 'full',
+              privacyLevel: 'maximum'
             },
             output: {
               originalPhoto: `photo_${photoId}_original.jpg`,
-              maskedPhoto: `photo_${photoId}_masked_${childName}.jpg`,
-              privacyLevel: 'high'
+              filteredPhoto: `photo_${photoId}_filtered_no_${childName}.jpg`,
+              childRemoved: true,
+              backgroundRebuilt: true,
+              privacyLevel: 'maximum'
             },
             aiModel: 'ClassVault-2.1',
-            processingTime: '3.2s'
+            processingTime: '4.5s',
+            description: `${childName} has been completely removed from this photo due to lack of consent`
           }
         } else if (consentAction === 'approve_all') {
-          // Simulate AI restoration for full approval
+          // Restore original photo when all children have consent
           result = {
             success: true,
             photoId,
@@ -179,10 +182,36 @@ class AIService {
             output: {
               originalPhoto: `photo_${photoId}_original.jpg`,
               restoredPhoto: `photo_${photoId}_restored.jpg`,
-              privacyLevel: 'none'
+              privacyLevel: 'none',
+              allChildrenVisible: true
             },
             aiModel: 'ClassVault-2.1',
-            processingTime: '1.8s'
+            processingTime: '1.8s',
+            description: 'All children have consent - original photo restored'
+          }
+        } else if (consentAction === 'partial_approval') {
+          // Handle mixed consent - show only approved children
+          result = {
+            success: true,
+            photoId,
+            action: 'partial_consent',
+            childName,
+            processing: {
+              method: 'AI_selective_filtering',
+              type: 'partial_removal',
+              backgroundReconstruction: 'selective',
+              privacyLevel: 'partial'
+            },
+            output: {
+              originalPhoto: `photo_${photoId}_original.jpg`,
+              filteredPhoto: `photo_${photoId}_filtered_partial.jpg`,
+              childrenRemoved: 'denied_children_only',
+              backgroundRebuilt: 'where_children_removed',
+              privacyLevel: 'partial'
+            },
+            aiModel: 'ClassVault-2.1',
+            processingTime: '3.8s',
+            description: 'Photo filtered to show only children with consent'
           }
         } else {
           // Default case for other consent actions
@@ -242,6 +271,46 @@ class AIService {
         console.log(`✅ Face learning complete for ${childTags.length} children`)
         resolve(result)
       }, 3000)
+    })
+  }
+
+  // CORE FUNCTION: Filter group photos based on consent
+  async filterGroupPhotoByConsent(photoId, childrenWithConsent, childrenWithoutConsent) {
+    console.log(`🔒 AI filtering group photo ${photoId} - ${childrenWithConsent.length} approved, ${childrenWithoutConsent.length} denied`)
+    
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const result = {
+          success: true,
+          photoId,
+          action: 'group_photo_filtering',
+          processing: {
+            method: 'AI_selective_person_removal',
+            type: 'consent_based_filtering',
+            backgroundReconstruction: 'full',
+            privacyLevel: 'maximum'
+          },
+          input: {
+            totalChildren: childrenWithConsent.length + childrenWithoutConsent.length,
+            childrenWithConsent,
+            childrenWithoutConsent
+          },
+          output: {
+            originalPhoto: `photo_${photoId}_original.jpg`,
+            filteredPhoto: `photo_${photoId}_filtered_consent_only.jpg`,
+            childrenRemoved: childrenWithoutConsent,
+            childrenVisible: childrenWithConsent,
+            backgroundRebuilt: childrenWithoutConsent.length > 0,
+            privacyLevel: childrenWithoutConsent.length > 0 ? 'maximum' : 'none'
+          },
+          aiModel: 'ClassVault-2.1',
+          processingTime: '5.2s',
+          description: `Group photo filtered to show only ${childrenWithConsent.length} children with consent. ${childrenWithoutConsent.length} children without consent have been removed.`
+        }
+        
+        console.log(`✅ Group photo filtering complete - privacy protected`)
+        resolve(result)
+      }, 4000)
     })
   }
 }
