@@ -70,11 +70,17 @@ const Home = () => {
             {/* Right Column - App Mockup */}
             <div className="flex justify-center lg:justify-end">
               <div className="relative">
-                <img
-                  src="/kindrid (1).png"
-                  alt="Kindrid App Interface - Group Photo Management"
-                  className="w-full max-w-md h-auto rounded-2xl shadow-2xl"
-                />
+                <div className="w-full max-w-md h-80 bg-gradient-to-br from-kindrid-100 to-kindrid-200 rounded-2xl shadow-2xl flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <div className="w-24 h-24 bg-kindrid-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Shield className="w-12 h-12 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-kindrid-800 mb-2">ClassVault™ AI</h3>
+                    <p className="text-sm text-kindrid-700">
+                      Secure photo sharing with intelligent identity protection
+                    </p>
+                  </div>
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-2xl"></div>
               </div>
             </div>

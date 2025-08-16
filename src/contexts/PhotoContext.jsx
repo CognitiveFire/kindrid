@@ -23,6 +23,9 @@ export const PhotoProvider = ({ children }) => {
   })
   const [userRole, setUserRole] = useState('teacher') // 'teacher' or 'parent'
   const [userChildren, setUserChildren] = useState(['Emma', 'Lucas']) // For parents: list of their children
+  const [isFaceLearning, setIsFaceLearning] = useState(false)
+  const [faceLearningProgress, setFaceLearningProgress] = useState(0)
+  const [learnedFaces, setLearnedFaces] = useState([])
 
   useEffect(() => {
     // Load demo photos from service
@@ -311,6 +314,51 @@ export const PhotoProvider = ({ children }) => {
     return await aiService.removePersonAndRebuildBackground(photoId, personId, options)
   }
 
+  const startFaceLearning = async (childTags) => {
+    console.log('PhotoContext: Starting face learning with tags:', childTags)
+    setIsFaceLearning(true)
+    setFaceLearningProgress(0)
+    
+    try {
+      // Simulate AI face learning process
+      const result = await aiService.learnFacesFromPhotos(childTags)
+      
+      if (result.success) {
+        setLearnedFaces(prev => [...prev, ...result.learnedFaces])
+        setFaceLearningProgress(100)
+        console.log('PhotoContext: Face learning completed successfully')
+      }
+      
+      return result
+    } catch (error) {
+      console.error('PhotoContext: Face learning failed:', error)
+      throw error
+    } finally {
+      setIsFaceLearning(false)
+      setFaceLearningProgress(0)
+    }
+  }
+
+  const reprocessPhotoForConsent = async (photoId, consentAction, childName) => {
+    console.log('PhotoContext: Reprocessing photo for consent change:', photoId, consentAction, childName)
+    
+    try {
+      const result = await aiService.updatePhotoForConsent(photoId, consentAction, childName)
+      
+      if (result.success) {
+        // Update the photo with new AI processing
+        const updatedPhoto = { ...result.photo }
+        updatePhoto(photoId, updatedPhoto)
+        console.log('PhotoContext: Photo reprocessed successfully')
+      }
+      
+      return result
+    } catch (error) {
+      console.error('PhotoContext: Photo reprocessing failed:', error)
+      throw error
+    }
+  }
+
   const switchUserRole = (role) => {
     setUserRole(role)
   }
@@ -326,6 +374,9 @@ export const PhotoProvider = ({ children }) => {
     aiStats,
     userRole,
     userChildren,
+    isFaceLearning,
+    faceLearningProgress,
+    learnedFaces,
     canManageConsent,
     getPhotosForUser,
     uploadPhoto,
@@ -339,6 +390,8 @@ export const PhotoProvider = ({ children }) => {
     getConsentStats,
     getPhotoAnalytics,
     removePersonFromPhoto,
+    startFaceLearning,
+    reprocessPhotoForConsent,
     switchUserRole,
     setUserChildrenList
   }
