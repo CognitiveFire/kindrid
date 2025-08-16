@@ -134,6 +134,116 @@ class AIService {
       }, 5000)
     })
   }
+
+  // Update photo based on consent changes
+  async updatePhotoForConsent(photoId, consentAction, childName) {
+    console.log(`🤖 AI processing consent change: ${consentAction} for ${childName} in photo ${photoId}`)
+    
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        let result
+        
+        if (consentAction === 'revoke') {
+          // Simulate AI masking for denied consent
+          result = {
+            success: true,
+            photoId,
+            action: 'consent_revoked',
+            childName,
+            processing: {
+              method: 'AI_masking',
+              type: 'artistic_filter',
+              intensity: 'high',
+              backgroundReconstruction: 'partial'
+            },
+            output: {
+              originalPhoto: `photo_${photoId}_original.jpg`,
+              maskedPhoto: `photo_${photoId}_masked_${childName}.jpg`,
+              privacyLevel: 'high'
+            },
+            aiModel: 'ClassVault-2.1',
+            processingTime: '3.2s'
+          }
+        } else if (consentAction === 'approve_all') {
+          // Simulate AI restoration for full approval
+          result = {
+            success: true,
+            photoId,
+            action: 'consent_approved',
+            childName,
+            processing: {
+              method: 'AI_restoration',
+              type: 'original_restore',
+              backgroundReconstruction: 'full'
+            },
+            output: {
+              originalPhoto: `photo_${photoId}_original.jpg`,
+              restoredPhoto: `photo_${photoId}_restored.jpg`,
+              privacyLevel: 'none'
+            },
+            aiModel: 'ClassVault-2.1',
+            processingTime: '1.8s'
+          }
+        } else {
+          // Default case for other consent actions
+          result = {
+            success: true,
+            photoId,
+            action: consentAction,
+            childName,
+            processing: {
+              method: 'AI_consent_update',
+              type: 'status_update',
+              backgroundReconstruction: 'none'
+            },
+            output: {
+              originalPhoto: `photo_${photoId}_original.jpg`,
+              updatedPhoto: `photo_${photoId}_updated.jpg`,
+              privacyLevel: 'partial'
+            },
+            aiModel: 'ClassVault-2.1',
+            processingTime: '0.5s'
+          }
+        }
+        
+        console.log(`✅ AI consent processing complete: ${consentAction} for ${childName}`)
+        resolve(result)
+      }, 2000)
+    })
+  }
+
+  // Learn faces from multiple photos for AI recognition
+  async learnFacesFromPhotos(childTags) {
+    console.log(`🧠 AI learning faces from ${childTags.length} tagged children`)
+    
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const learnedFaces = childTags.map(tag => ({
+          childName: tag.child,
+          faceId: `face_${tag.child.toLowerCase()}_${Date.now()}`,
+          confidence: 0.92 + Math.random() * 0.08,
+          features: ['eyes', 'nose', 'mouth', 'face_shape'],
+          learningQuality: 'high'
+        }))
+        
+        const result = {
+          success: true,
+          learnedFaces,
+          totalFaces: childTags.length,
+          learningTime: '4.7s',
+          aiModel: 'ClassVault-2.1',
+          nextSteps: [
+            'Continue uploading photos with same children',
+            'AI will improve recognition accuracy',
+            'Ready for consent-based processing'
+          ]
+        }
+        
+        console.log(`✅ Face learning complete for ${childTags.length} children`)
+        resolve(result)
+      }, 3000)
+    })
+  }
 }
 
 export default new AIService()

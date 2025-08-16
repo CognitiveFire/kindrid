@@ -242,6 +242,25 @@ export const PhotoProvider = ({ children }) => {
         } catch (error) {
           console.error('PhotoContext: AI processing failed for full approval:', error)
         }
+      } else if (updatedPhoto.consentPending.length > 0) {
+        // Some children still pending, trigger AI processing for partial consent
+        try {
+          console.log('PhotoContext: Partial consent, triggering AI processing for mixed approval')
+          const result = await reprocessPhotoForConsent(photoId, 'partial_approval', childName)
+          
+          if (result && result.success) {
+            console.log('PhotoContext: AI processing completed for partial approval')
+            setPhotos(prev =>
+              prev.map(photo =>
+                photo.id === photoId
+                  ? { ...photo, status: 'approved', aiProcessed: true }
+                  : photo
+              )
+            )
+          }
+        } catch (error) {
+          console.error('PhotoContext: AI processing failed for partial approval:', error)
+        }
       }
     }
   }
