@@ -23,6 +23,7 @@ function App() {
             <main className="flex-1">
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/health" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold text-green-600">✅ Healthy</h1><p className="text-gray-600">Kindrid app is running successfully</p></div>} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/gallery" element={<PhotoGallery />} />
                 <Route path="/ai-tools" element={<AITools />} />

@@ -2,7 +2,7 @@
   "name": "kindrid-prototype",
   "version": "1.0.0",
   "description": "Secure, AI-powered platform for sharing school photos and videos with full parental control",
-  "type": "module",
+
   "main": "index.js",
   "scripts": {
     "dev": "vite",

@@ -1,10 +1,14 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+const { defineConfig } = require('vite')
+const react = require('@vitejs/plugin-react')
 
-export default defineConfig({
+module.exports = defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,
-    open: true
+    port: process.env.PORT || 3000,
+    host: '0.0.0.0'
+  },
+  preview: {
+    port: process.env.PORT || 3000,
+    host: '0.0.0.0'
   }
 })
