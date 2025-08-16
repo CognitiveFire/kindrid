@@ -157,35 +157,57 @@ const Dashboard = () => {
   }
 
   const renderPhotoImage = (photo) => {
-    if (photo.url) {
+    // Priority: masked URL > current display URL > original URL
+    let imageUrl = photo.maskedUrl || photo.currentDisplayUrl || photo.url
+    
+    if (imageUrl) {
       // Check if it's a data URL (SVG placeholder)
-      if (photo.url.startsWith('data:')) {
+      if (imageUrl.startsWith('data:')) {
         return (
           <img 
-            src={photo.url} 
+            src={imageUrl} 
             alt={photo.title}
             className="w-full h-48 object-cover"
           />
         )
       }
       // Check if it's a blob URL
-      if (photo.url.startsWith('blob:')) {
+      if (imageUrl.startsWith('blob:')) {
         return (
           <img 
-            src={photo.url} 
+            src={imageUrl} 
             alt={photo.title}
             className="w-full h-48 object-cover"
           />
         )
       }
       // Check if it's a regular file path (like /1.jpg, /2.jpg, etc.)
-      if (photo.url.startsWith('/')) {
+      if (imageUrl.startsWith('/')) {
         return (
           <img 
-            src={photo.url} 
+            src={imageUrl} 
             alt={photo.title}
             className="w-full h-48 object-cover"
           />
+        )
+        // Check if it's a masked URL with query parameters
+      } else if (imageUrl.includes('?masked=true')) {
+        // This is a masked photo - apply visual indication
+        const baseUrl = imageUrl.split('?')[0]
+        return (
+          <div className="relative">
+            <img 
+              src={baseUrl} 
+              alt={photo.title}
+              className="w-full h-48 object-cover filter blur-sm opacity-75"
+            />
+            {/* Overlay to show masking is applied */}
+            <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+              <div className="bg-white bg-opacity-90 rounded-lg px-3 py-1">
+                <span className="text-xs font-medium text-gray-700">🔒 Masked</span>
+              </div>
+            </div>
+          </div>
         )
       }
     }

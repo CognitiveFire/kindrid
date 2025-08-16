@@ -431,10 +431,63 @@ export const PhotoProvider = ({ children }) => {
       const result = await aiService.updatePhotoForConsent(photoId, consentAction, childName)
       
       if (result.success) {
-        // Update the photo with new AI processing
-        const updatedPhoto = { ...result.photo }
+        // Get the current photo
+        const currentPhoto = photos.find(p => p.id === photoId)
+        if (!currentPhoto) {
+          console.error('Photo not found for reprocessing:', photoId)
+          return result
+        }
+
+        // Create masked version of the photo based on consent action
+        let maskedPhotoUrl = currentPhoto.url // Start with original
+        
+        if (consentAction === 'revoke') {
+          // Apply masking to the denied child
+          const maskingResult = await aiService.applyPrivacyMasking(photoId, childName, 'artistic')
+          if (maskingResult.success) {
+            // Create a masked version by applying a visual effect
+            maskedPhotoUrl = createMaskedPhotoUrl(currentPhoto.url, childName, 'artistic')
+            console.log('PhotoContext: Applied artistic masking to', childName)
+          }
+        } else if (consentAction === 'partial_approval') {
+          // For partial approval, mask all denied children
+          const deniedChildren = currentPhoto.consentPending
+          if (deniedChildren.length > 0) {
+            // Apply masking to all denied children
+            for (const deniedChild of deniedChildren) {
+              const maskingResult = await aiService.applyPrivacyMasking(photoId, deniedChild, 'artistic')
+              if (maskingResult.success) {
+                maskedPhotoUrl = createMaskedPhotoUrl(maskedPhotoUrl, deniedChild, 'artistic')
+                console.log('PhotoContext: Applied masking to denied child:', deniedChild)
+              }
+            }
+          }
+        } else if (consentAction === 'approve_all') {
+          // Restore original photo when all children approved
+          maskedPhotoUrl = currentPhoto.url
+          console.log('PhotoContext: Restored original photo - all children approved')
+        }
+
+        // Update the photo with masked version and AI processing status
+        const updatedPhoto = {
+          ...currentPhoto,
+          maskedUrl: maskedPhotoUrl,
+          currentDisplayUrl: maskedPhotoUrl, // This is what gets displayed
+          aiProcessed: true,
+          lastMaskingApplied: new Date().toISOString(),
+          maskingDetails: {
+            action: consentAction,
+            childName,
+            technique: 'artistic',
+            appliedAt: new Date().toISOString()
+          }
+        }
+        
+        // Update the photo in both local state and demo service
         updatePhoto(photoId, updatedPhoto)
-        console.log('PhotoContext: Photo reprocessed successfully')
+        demoPhotoService.updatePhoto(photoId, updatedPhoto)
+        
+        console.log('PhotoContext: Photo reprocessed and masked successfully')
       }
       
       return result
@@ -442,6 +495,17 @@ export const PhotoProvider = ({ children }) => {
       console.error('PhotoContext: Photo reprocessing failed:', error)
       throw error
     }
+  }
+
+  // Helper function to create masked photo URL (simulates AI masking)
+  const createMaskedPhotoUrl = (originalUrl, childName, maskingType) => {
+    // In a real app, this would call the AI service to actually mask the photo
+    // For now, we'll simulate it by creating a modified URL that indicates masking
+    const baseUrl = originalUrl.split('?')[0]
+    const maskedUrl = `${baseUrl}?masked=true&child=${encodeURIComponent(childName)}&type=${maskingType}&timestamp=${Date.now()}`
+    
+    console.log(`PhotoContext: Created masked URL for ${childName}:`, maskedUrl)
+    return maskedUrl
   }
 
   const switchUserRole = (role) => {
