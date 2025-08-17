@@ -188,8 +188,9 @@ const Dashboard = () => {
   }
 
   const renderPhotoImage = (photo) => {
-    // Priority: masked URL > current display URL > original URL
-    let imageUrl = photo.maskedUrl || photo.currentDisplayUrl || photo.url
+    // Always prioritize the original URL to prevent images from disappearing
+    // Only fall back to other URLs if the original is completely unavailable
+    let imageUrl = photo.url || photo.currentDisplayUrl || photo.maskedUrl
     
     if (imageUrl) {
       // Check if it's a data URL (SVG placeholder)
@@ -221,16 +222,16 @@ const Dashboard = () => {
             className="w-full h-48 object-cover"
           />
         )
-        // Check if it's a masked URL with query parameters
-      } else if (imageUrl.includes('?masked=true')) {
-        // This is a masked photo - apply visual indication
+      }
+      // Check if it's a masked URL with query parameters - strip them for display
+      if (imageUrl.includes('?masked=true')) {
         const baseUrl = imageUrl.split('?')[0]
         return (
           <div className="relative">
             <img 
               src={baseUrl} 
               alt={photo.title}
-              className="w-full h-48 object-cover filter blur-sm opacity-75"
+              className="w-full h-48 object-cover"
             />
             {/* Overlay to show masking is applied */}
             <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
@@ -241,6 +242,21 @@ const Dashboard = () => {
           </div>
         )
       }
+      
+      // For any other URL type, try to display it
+      return (
+        <img 
+          src={imageUrl} 
+          alt={photo.title}
+          className="w-full h-48 object-cover"
+          onError={(e) => {
+            console.error('Image failed to load:', imageUrl)
+            // If image fails, show placeholder
+            e.target.style.display = 'none'
+            e.target.nextSibling.style.display = 'block'
+          }}
+        />
+      )
     }
     
     // Fallback placeholder

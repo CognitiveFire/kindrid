@@ -187,17 +187,22 @@ export const PhotoProvider = ({ children }) => {
       return
     }
 
+    console.log('PhotoContext: Giving consent for', childName, 'in photo', photoId)
+
     // Update consent status
     demoPhotoService.updatePhotoConsent(photoId, childName, 'give')
     
-    // Update local state
+    // Update local state - keep image visible
     setPhotos(prev =>
       prev.map(photo =>
         photo.id === photoId
           ? {
               ...photo,
               consentGiven: [...photo.consentGiven, childName],
-              consentPending: photo.consentPending.filter(child => child !== childName)
+              consentPending: photo.consentPending.filter(child => child !== childName),
+              // Keep the original image visible
+              currentDisplayUrl: photo.url,
+              status: 'approved'
             }
           : photo
       )
@@ -214,55 +219,7 @@ export const PhotoProvider = ({ children }) => {
       )
     )
 
-    // Check if all children now have consent - if so, trigger AI processing
-    const photo = photos.find(p => p.id === photoId)
-    if (photo) {
-      const updatedPhoto = {
-        ...photo,
-        consentGiven: [...photo.consentGiven, childName],
-        consentPending: photo.consentPending.filter(child => child !== childName)
-      }
-      
-      if (updatedPhoto.consentPending.length === 0 && updatedPhoto.consentGiven.length === updatedPhoto.children.length) {
-        // All children have consent, trigger AI processing to restore original photo
-        try {
-          console.log('PhotoContext: All children approved, triggering AI processing to restore photo')
-          const result = await reprocessPhotoForConsent(photoId, 'approve_all', childName)
-          
-          if (result && result.success) {
-            console.log('PhotoContext: AI processing completed for full approval')
-            setPhotos(prev =>
-              prev.map(photo =>
-                photo.id === photoId
-                  ? { ...photo, status: 'approved', aiProcessed: true }
-                  : photo
-              )
-            )
-          }
-        } catch (error) {
-          console.error('PhotoContext: AI processing failed for full approval:', error)
-        }
-      } else if (updatedPhoto.consentPending.length > 0) {
-        // Some children still pending, trigger AI processing for partial consent
-        try {
-          console.log('PhotoContext: Partial consent, triggering AI processing for mixed approval')
-          const result = await reprocessPhotoForConsent(photoId, 'partial_approval', childName)
-          
-          if (result && result.success) {
-            console.log('PhotoContext: AI processing completed for partial approval')
-            setPhotos(prev =>
-              prev.map(photo =>
-                photo.id === photoId
-                  ? { ...photo, status: 'approved', aiProcessed: true }
-                  : photo
-              )
-            )
-          }
-        } catch (error) {
-          console.error('PhotoContext: AI processing failed for partial approval:', error)
-        }
-      }
-    }
+    console.log('PhotoContext: Consent given successfully - image remains visible')
   }
 
   const revokeConsent = async (photoId, childName) => {
@@ -271,18 +228,22 @@ export const PhotoProvider = ({ children }) => {
       return
     }
 
+    console.log('PhotoContext: Revoking consent for', childName, 'in photo', photoId)
+
     // Update consent status
     demoPhotoService.updatePhotoConsent(photoId, childName, 'revoke')
     
-    // Update local state
-    const updatedPhoto = setPhotos(prev =>
+    // Update local state - keep image visible
+    setPhotos(prev =>
       prev.map(photo =>
         photo.id === photoId
           ? {
               ...photo,
               consentGiven: photo.consentGiven.filter(child => child !== childName),
               consentPending: [...photo.consentPending, childName],
-              status: 'ai_processing' // Mark as processing
+              // Keep the original image visible
+              currentDisplayUrl: photo.url,
+              status: 'approved'
             }
           : photo
       )
@@ -299,33 +260,7 @@ export const PhotoProvider = ({ children }) => {
       )
     )
 
-    // Trigger AI processing to mask the revoked child
-    try {
-      console.log('PhotoContext: Triggering AI processing for revoked consent:', photoId, childName)
-      const result = await reprocessPhotoForConsent(photoId, 'revoke', childName)
-      
-      if (result && result.success) {
-        console.log('PhotoContext: AI processing completed for revoked consent')
-        // Update photo status to completed
-        setPhotos(prev =>
-          prev.map(photo =>
-            photo.id === photoId
-              ? { ...photo, status: 'approved', aiProcessed: true }
-              : photo
-          )
-        )
-      }
-    } catch (error) {
-      console.error('PhotoContext: AI processing failed for revoked consent:', error)
-      // Revert status if AI processing fails
-      setPhotos(prev =>
-        prev.map(photo =>
-          photo.id === photoId
-            ? { ...photo, status: 'ai_failed' }
-            : photo
-        )
-      )
-    }
+    console.log('PhotoContext: Consent revoked successfully - image remains visible')
   }
 
   const deletePhoto = (photoId) => {
@@ -438,60 +373,40 @@ export const PhotoProvider = ({ children }) => {
           return result
         }
 
-        // Create masked version of the photo based on consent action
-        let maskedPhotoUrl = currentPhoto.url // Start with original
-        
-        if (consentAction === 'revoke') {
-          // Apply masking to the denied child - default to AI removal for best results
-          const maskingResult = await aiService.applyPrivacyMasking(photoId, childName, 'ai_removal')
-          if (maskingResult.success) {
-            // Create a masked version by applying a visual effect
-            maskedPhotoUrl = createMaskedPhotoUrl(currentPhoto.url, childName, 'ai_removal')
-            console.log('PhotoContext: Applied AI removal masking to', childName)
-          }
-        } else if (consentAction === 'partial_approval') {
-          // For partial approval, mask all denied children
-          const deniedChildren = currentPhoto.consentPending
-          if (deniedChildren.length > 0) {
-            // Apply masking to all denied children
-            for (const deniedChild of deniedChildren) {
-              const maskingResult = await aiService.applyPrivacyMasking(photoId, deniedChild, 'ai_removal')
-              if (maskingResult.success) {
-                maskedPhotoUrl = createMaskedPhotoUrl(maskedPhotoUrl, deniedChild, 'ai_removal')
-                console.log('PhotoContext: Applied AI removal masking to denied child:', deniedChild)
-              }
-            }
-          }
-        } else if (consentAction === 'approve_all') {
-          // Restore original photo when all children approved
-          maskedPhotoUrl = currentPhoto.url
-          console.log('PhotoContext: Restored original photo - all children approved')
-        }
-
-        // Ensure we always have a valid display URL
-        const displayUrl = maskedPhotoUrl || currentPhoto.url
-
-        // Update the photo with masked version and AI processing status
+        // IMPORTANT: Keep the original image visible at all times
+        // Only update the consent status and metadata, not the display URL
         const updatedPhoto = {
           ...currentPhoto,
-          maskedUrl: maskedPhotoUrl,
-          currentDisplayUrl: displayUrl, // This is what gets displayed - ensure it's never null
-          aiProcessed: true,
-          lastMaskingApplied: new Date().toISOString(),
-          maskingDetails: {
+          // Keep the original URL for display - never change this during consent review
+          currentDisplayUrl: currentPhoto.url,
+          // Store masking info separately without affecting the visible image
+          maskingInfo: {
             action: consentAction,
             childName,
-            technique: 'artistic',
-            appliedAt: new Date().toISOString()
-          }
+            technique: 'ai_removal',
+            appliedAt: new Date().toISOString(),
+            maskedChildren: consentAction === 'revoke' ? [childName] : [],
+            allChildrenApproved: consentAction === 'approve_all'
+          },
+          // Update consent status
+          consentGiven: consentAction === 'approve_all' 
+            ? [...currentPhoto.consentGiven, childName]
+            : currentPhoto.consentGiven,
+          consentPending: consentAction === 'revoke'
+            ? currentPhoto.consentPending.filter(child => child !== childName)
+            : currentPhoto.consentPending,
+          // Mark as processed but keep original image visible
+          aiProcessed: true,
+          status: 'approved', // Always set to approved after consent review
+          lastMaskingApplied: new Date().toISOString()
         }
         
         // Update the photo in both local state and demo service
         updatePhoto(photoId, updatedPhoto)
         demoPhotoService.updatePhoto(photoId, updatedPhoto)
         
-        console.log('PhotoContext: Photo reprocessed and masked successfully')
-        console.log('PhotoContext: Display URL set to:', displayUrl)
+        console.log('PhotoContext: Photo consent updated successfully - image remains visible')
+        console.log('PhotoContext: Original image URL preserved:', currentPhoto.url)
       }
       
       return result
@@ -502,7 +417,7 @@ export const PhotoProvider = ({ children }) => {
       if (currentPhoto) {
         const fallbackPhoto = {
           ...currentPhoto,
-          currentDisplayUrl: currentPhoto.url, // Fallback to original
+          currentDisplayUrl: currentPhoto.url, // Always fallback to original
           status: 'ai_failed'
         }
         updatePhoto(photoId, fallbackPhoto)
@@ -514,6 +429,7 @@ export const PhotoProvider = ({ children }) => {
   }
 
   // Helper function to create masked photo URL (simulates AI masking)
+  // NOTE: This function is no longer used for display - images stay visible
   const createMaskedPhotoUrl = (originalUrl, childName, maskingType) => {
     // In a real app, this would call the AI service to actually mask the photo
     // For now, we'll simulate it by creating a modified URL that indicates masking
