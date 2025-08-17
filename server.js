@@ -3,6 +3,9 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Add startup delay for Railway health checks
+const STARTUP_DELAY = process.env.RAILWAY_STARTUP_DELAY || 5000; // 5 seconds default
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ 
@@ -10,7 +13,8 @@ app.get('/health', (req, res) => {
     message: 'Kindrid app is running successfully',
     timestamp: new Date().toISOString(),
     port: PORT,
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    railway: process.env.RAILWAY_ENVIRONMENT ? 'true' : 'false'
   });
 });
 
@@ -28,10 +32,14 @@ app.get('/health.html', (req, res) => {
         <p>Timestamp: ${new Date().toISOString()}</p>
         <p>Port: ${PORT}</p>
         <p>Environment: ${process.env.NODE_ENV || 'development'}</p>
+        <p>Railway: ${process.env.RAILWAY_ENVIRONMENT ? 'Yes' : 'No'}</p>
     </body>
     </html>
   `);
 });
+
+// Serve static files from the public directory first (for health.html)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve static files from the dist directory
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -73,10 +81,16 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found', path: req.originalUrl });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌐 Health check available at /health and /health.html`);
-  console.log(`📁 Serving static files from: ${path.join(__dirname, 'dist')}`);
-  console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌍 Railway deployment ready!`);
-});
+// Add startup delay for Railway
+setTimeout(() => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🌐 Health check available at /health and /health.html`);
+    console.log(`📁 Serving static files from: ${path.join(__dirname, 'dist')}`);
+    console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🌍 Railway deployment ready!`);
+    console.log(`⏱️  Startup delay completed (${STARTUP_DELAY}ms)`);
+  });
+}, STARTUP_DELAY);
+
+console.log(`⏱️  Starting server with ${STARTUP_DELAY}ms delay for Railway health checks...`);
