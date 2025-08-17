@@ -3,9 +3,6 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Add startup delay for Railway health checks
-const STARTUP_DELAY = process.env.RAILWAY_STARTUP_DELAY || 5000; // 5 seconds default
-
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ 
@@ -81,16 +78,12 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found', path: req.originalUrl });
 });
 
-// Add startup delay for Railway
-setTimeout(() => {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🌐 Health check available at /health and /health.html`);
-    console.log(`📁 Serving static files from: ${path.join(__dirname, 'dist')}`);
-    console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🌍 Railway deployment ready!`);
-    console.log(`⏱️  Startup delay completed (${STARTUP_DELAY}ms)`);
-  });
-}, STARTUP_DELAY);
-
-console.log(`⏱️  Starting server with ${STARTUP_DELAY}ms delay for Railway health checks...`);
+// Start server immediately
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌐 Health check available at /health and /health.html`);
+  console.log(`📁 Serving static files from: ${path.join(__dirname, 'dist')}`);
+  console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌍 Railway deployment ready!`);
+  console.log(`✅ Health checks should work immediately`);
+});
