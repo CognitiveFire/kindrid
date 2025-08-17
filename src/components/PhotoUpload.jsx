@@ -226,17 +226,23 @@ const PhotoUpload = ({ onClose }) => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-medium text-gray-900">Image Preview</h3>
-                  <button
-                    type="button"
-                    onClick={startTagging}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      isTagging 
-                        ? 'bg-blue-100 text-blue-700' 
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                  >
-                    {isTagging ? 'Tagging Active' : 'Start Tagging Children'}
-                  </button>
+                  {childrenNames.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={startTagging}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        isTagging 
+                          ? 'bg-blue-100 text-blue-700' 
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {isTagging ? 'Tagging Active' : 'Start Tagging Children'}
+                    </button>
+                  ) : (
+                    <div className="text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+                      ⚠️ Add children names below to enable tagging
+                    </div>
+                  )}
                 </div>
                 
                 <div className="relative">
@@ -402,39 +408,7 @@ const PhotoUpload = ({ onClose }) => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Children in Photo
-                </label>
-                <input
-                  type="text"
-                  name="children"
-                  value={formData.children}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kindrid-500 focus:border-transparent"
-                  placeholder="e.g., Emma, Lucas, Sarah"
-                  required
-                />
-                {childrenNames.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {childrenNames.map((name, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-kindrid-100 text-kindrid-800"
-                      >
-                        {name}
-                        <button
-                          type="button"
-                          onClick={() => removeChildName(index)}
-                          className="ml-2 text-kindrid-600 hover:text-kindrid-800"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

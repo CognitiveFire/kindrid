@@ -140,33 +140,33 @@ class AIService {
     console.log(`🤖 AI processing consent change: ${consentAction} for ${childName} in photo ${photoId}`)
     
     return new Promise((resolve) => {
-      setTimeout(() => {
-        let result
-        
-        if (consentAction === 'revoke') {
-          // CORE FUNCTION: Mask child in photo when consent is denied
-          result = {
-            success: true,
-            photoId,
-            action: 'consent_revoked',
-            childName,
-            processing: {
-              method: 'AI_person_masking',
-              type: 'identity_masking',
-              backgroundReconstruction: 'minimal',
-              privacyLevel: 'maximum'
-            },
-            output: {
-              originalPhoto: `photo_${photoId}_original.jpg`,
-              maskedPhoto: `photo_${photoId}_masked_${childName}.jpg`,
-              childMasked: true,
-              backgroundPreserved: true,
-              privacyLevel: 'maximum'
-            },
-            aiModel: 'ClassVault-2.1',
-            processingTime: '3.2s',
-            description: `${childName} has been masked in this photo due to lack of consent - identity protected while maintaining photo composition`
-          }
+              setTimeout(() => {
+          let result
+          
+          if (consentAction === 'revoke') {
+            // CORE FUNCTION: Mask child in photo when consent is denied
+            result = {
+              success: true,
+              photoId,
+              action: 'consent_revoked',
+              childName,
+              processing: {
+                method: 'AI_person_masking',
+                type: 'identity_masking',
+                backgroundReconstruction: 'minimal',
+                privacyLevel: 'maximum'
+              },
+              output: {
+                originalPhoto: `photo_${photoId}_original.jpg`,
+                maskedPhoto: `photo_${photoId}_masked_${childName}.jpg`,
+                childMasked: true,
+                backgroundPreserved: true,
+                privacyLevel: 'maximum'
+              },
+              aiModel: 'ClassVault-2.1',
+              processingTime: '1.2s',
+              description: `${childName} has been masked in this photo due to lack of consent - identity protected while maintaining photo composition`
+            }
         } else if (consentAction === 'approve_all') {
           // Restore original photo when all children have consent
           result = {
@@ -185,9 +185,9 @@ class AIService {
               privacyLevel: 'none',
               allChildrenVisible: true
             },
-            aiModel: 'ClassVault-2.1',
-            processingTime: '1.8s',
-            description: 'All children have consent - original photo restored'
+                          aiModel: 'ClassVault-2.1',
+              processingTime: '0.8s',
+              description: 'All children have consent - original photo restored'
           }
         } else if (consentAction === 'partial_approval') {
           // Handle mixed consent - mask denied children, show approved children
@@ -210,9 +210,9 @@ class AIService {
               backgroundPreserved: true,
               privacyLevel: 'partial'
             },
-            aiModel: 'ClassVault-2.1',
-            processingTime: '3.8s',
-            description: 'Photo masked to show approved children while protecting privacy of denied children - composition maintained'
+                          aiModel: 'ClassVault-2.1',
+              processingTime: '1.8s',
+              description: 'Photo masked to show approved children while protecting privacy of denied children - composition maintained'
           }
         } else {
           // Default case for other consent actions
@@ -316,39 +316,32 @@ class AIService {
   }
 
   // Apply different masking techniques for privacy protection
-  async applyPrivacyMasking(photoId, childName, maskingType = 'artistic') {
+  async applyPrivacyMasking(photoId, childName, maskingType = 'ai_removal') {
     console.log(`🎭 Applying ${maskingType} masking to ${childName} in photo ${photoId}`)
     
     return new Promise((resolve) => {
       setTimeout(() => {
         const maskingTechniques = {
+          ai_removal: {
+            method: 'AI_person_removal',
+            type: 'seamless_removal',
+            effect: 'background_reconstruction',
+            intensity: 'maximum',
+            description: 'AI removes child and seamlessly reconstructs background - most natural result'
+          },
           artistic: {
             method: 'AI_artistic_filter',
-            type: 'creative_masking',
-            effect: 'paint_style',
-            intensity: 'high',
-            description: 'Artistic filter applied to protect identity while maintaining aesthetic appeal'
+            type: 'natural_replacement',
+            effect: 'plant_nature',
+            intensity: 'medium',
+            description: 'Replaces child with natural elements like plants or flowers'
           },
           blur: {
             method: 'AI_blur_masking',
             type: 'gaussian_blur',
             effect: 'heavy_blur',
-            intensity: 'maximum',
-            description: 'Heavy blur applied to completely obscure identity'
-          },
-          pixelate: {
-            method: 'AI_pixelation',
-            type: 'mosaic_effect',
-            effect: 'high_pixelation',
             intensity: 'high',
-            description: 'Pixelation effect applied to protect identity'
-          },
-          silhouette: {
-            method: 'AI_silhouette',
-            type: 'shape_preservation',
-            effect: 'dark_silhouette',
-            intensity: 'medium',
-            description: 'Silhouette effect preserves shape while hiding identity'
+            description: 'Heavy blur applied to completely obscure identity'
           }
         }
         

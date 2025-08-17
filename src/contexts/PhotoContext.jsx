@@ -442,12 +442,12 @@ export const PhotoProvider = ({ children }) => {
         let maskedPhotoUrl = currentPhoto.url // Start with original
         
         if (consentAction === 'revoke') {
-          // Apply masking to the denied child
-          const maskingResult = await aiService.applyPrivacyMasking(photoId, childName, 'artistic')
+          // Apply masking to the denied child - default to AI removal for best results
+          const maskingResult = await aiService.applyPrivacyMasking(photoId, childName, 'ai_removal')
           if (maskingResult.success) {
             // Create a masked version by applying a visual effect
-            maskedPhotoUrl = createMaskedPhotoUrl(currentPhoto.url, childName, 'artistic')
-            console.log('PhotoContext: Applied artistic masking to', childName)
+            maskedPhotoUrl = createMaskedPhotoUrl(currentPhoto.url, childName, 'ai_removal')
+            console.log('PhotoContext: Applied AI removal masking to', childName)
           }
         } else if (consentAction === 'partial_approval') {
           // For partial approval, mask all denied children
@@ -455,10 +455,10 @@ export const PhotoProvider = ({ children }) => {
           if (deniedChildren.length > 0) {
             // Apply masking to all denied children
             for (const deniedChild of deniedChildren) {
-              const maskingResult = await aiService.applyPrivacyMasking(photoId, deniedChild, 'artistic')
+              const maskingResult = await aiService.applyPrivacyMasking(photoId, deniedChild, 'ai_removal')
               if (maskingResult.success) {
-                maskedPhotoUrl = createMaskedPhotoUrl(maskedPhotoUrl, deniedChild, 'artistic')
-                console.log('PhotoContext: Applied masking to denied child:', deniedChild)
+                maskedPhotoUrl = createMaskedPhotoUrl(maskedPhotoUrl, deniedChild, 'ai_removal')
+                console.log('PhotoContext: Applied AI removal masking to denied child:', deniedChild)
               }
             }
           }
@@ -508,6 +508,69 @@ export const PhotoProvider = ({ children }) => {
     return maskedUrl
   }
 
+  // Apply custom masking with user choice
+  const applyCustomMasking = async (photoId, childName, maskingType) => {
+    console.log(`PhotoContext: Applying custom masking ${maskingType} to ${childName} in photo ${photoId}`)
+    
+    try {
+      const maskingResult = await aiService.applyPrivacyMasking(photoId, childName, maskingType)
+      
+      if (maskingResult.success) {
+        const currentPhoto = photos.find(p => p.id === photoId)
+        if (!currentPhoto) return null
+
+        // Create masked version
+        const maskedPhotoUrl = createMaskedPhotoUrl(currentPhoto.url, childName, maskingType)
+        
+        // Update photo with new masking
+        const updatedPhoto = {
+          ...currentPhoto,
+          maskedUrl: maskedPhotoUrl,
+          currentDisplayUrl: maskedPhotoUrl,
+          aiProcessed: true,
+          lastMaskingApplied: new Date().toISOString(),
+          maskingDetails: {
+            action: 'custom_masking',
+            childName,
+            technique: maskingType,
+            appliedAt: new Date().toISOString()
+          }
+        }
+        
+        updatePhoto(photoId, updatedPhoto)
+        demoPhotoService.updatePhoto(photoId, updatedPhoto)
+        
+        console.log(`PhotoContext: Custom masking ${maskingType} applied successfully`)
+        return maskingResult
+      }
+    } catch (error) {
+      console.error('PhotoContext: Custom masking failed:', error)
+      throw error
+    }
+  }
+
+  // Revert photo to original (unmasked) version
+  const revertToOriginal = (photoId) => {
+    console.log(`PhotoContext: Reverting photo ${photoId} to original`)
+    
+    const currentPhoto = photos.find(p => p.id === photoId)
+    if (!currentPhoto) return
+
+    const updatedPhoto = {
+      ...currentPhoto,
+      currentDisplayUrl: currentPhoto.url, // Show original
+      maskedUrl: null,
+      aiProcessed: false,
+      lastMaskingApplied: null,
+      maskingDetails: null
+    }
+    
+    updatePhoto(photoId, updatedPhoto)
+    demoPhotoService.updatePhoto(photoId, updatedPhoto)
+    
+    console.log(`PhotoContext: Photo ${photoId} reverted to original`)
+  }
+
   const switchUserRole = (role) => {
     setUserRole(role)
   }
@@ -541,6 +604,8 @@ export const PhotoProvider = ({ children }) => {
     removePersonFromPhoto,
     startFaceLearning,
     reprocessPhotoForConsent,
+    applyCustomMasking,
+    revertToOriginal,
     switchUserRole,
     setUserChildrenList
   }
