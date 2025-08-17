@@ -7,8 +7,29 @@ const PORT = process.env.PORT || 3000;
 console.log('Starting minimal server for Railway...');
 console.log(`Port: ${PORT}`);
 console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`Express version: ${require('express/package.json').version}`);
 
-// Health check - respond immediately
+// Root path - respond immediately for health checks
+app.get('/', (req, res) => {
+  console.log('Root path requested (health check)');
+  res.status(200).send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Kindrid - Healthy</title>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <h1>✅ Kindrid is Running</h1>
+        <p>Server is healthy and responding</p>
+        <p>Port: ${PORT}</p>
+        <p>Time: ${new Date().toISOString()}</p>
+    </body>
+    </html>
+  `);
+});
+
+// Health check endpoint
 app.get('/health', (req, res) => {
   console.log('Health check requested');
   res.status(200).json({ 
@@ -40,7 +61,8 @@ app.get('*', (req, res) => {
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+  console.log(`🌐 Root path: http://localhost:${PORT}/`);
+  console.log(`🔍 Health check: http://localhost:${PORT}/health`);
   console.log(`🧪 Test endpoint: http://localhost:${PORT}/test`);
   console.log(`🚀 Ready for Railway deployment!`);
 });
