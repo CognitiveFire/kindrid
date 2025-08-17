@@ -221,11 +221,49 @@ const PhotoUpload = ({ onClose }) => {
               )}
             </div>
 
+            {/* Children Names Input - Required for Tagging */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Children in Photo <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="children"
+                value={formData.children}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kindrid-500 focus:border-transparent"
+                placeholder="e.g., Emma, Lucas, Sarah"
+                required
+              />
+              {childrenNames.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {childrenNames.map((name, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-kindrid-100 text-kindrid-800"
+                    >
+                      {name}
+                      <button
+                        type="button"
+                        onClick={() => removeChildName(index)}
+                        className="ml-2 text-kindrid-600 hover:text-kindrid-800"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-gray-600 mt-1">
+                💡 Add all children names first, then use the tagging feature below
+              </p>
+            </div>
+
             {/* Image Preview and Tagging */}
             {imagePreview && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium text-gray-900">Image Preview</h3>
+                  <h3 className="text-lg font-medium text-gray-900">Image Preview & Tagging</h3>
                   {childrenNames.length > 0 ? (
                     <button
                       type="button"
@@ -240,7 +278,7 @@ const PhotoUpload = ({ onClose }) => {
                     </button>
                   ) : (
                     <div className="text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-                      ⚠️ Add children names below to enable tagging
+                      ⚠️ Add children names above to enable tagging
                     </div>
                   )}
                 </div>
