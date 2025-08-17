@@ -46,10 +46,6 @@ app.get('/test', (req, res) => {
   res.status(200).json({ message: 'Server is responding!', time: new Date().toISOString() });
 });
 
-// Serve static files from the public directory first (for health.html)
-console.log(`📁 Serving public directory from: ${path.join(__dirname, 'public')}`);
-app.use(express.static(path.join(__dirname, 'public')));
-
 // Serve static files from the dist directory
 console.log(`📁 Serving dist directory from: ${path.join(__dirname, 'dist')}`);
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -94,7 +90,7 @@ app.use('*', (req, res) => {
 });
 
 // Start server immediately
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌐 Health check available at /health and /health.html`);
   console.log(`🧪 Test endpoint available at /test`);
@@ -103,6 +99,12 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌍 Railway deployment ready!`);
   console.log(`✅ Health checks should work immediately`);
   console.log(`⏰ Server started at: ${new Date().toISOString()}`);
+});
+
+// Handle server errors
+server.on('error', (err) => {
+  console.error('❌ Server error:', err);
+  process.exit(1);
 });
 
 // Handle process errors
@@ -114,4 +116,21 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
 });
