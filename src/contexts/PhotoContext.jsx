@@ -187,26 +187,56 @@ export const PhotoProvider = ({ children }) => {
       return
     }
 
-    console.log('PhotoContext: Giving consent for', childName, 'in photo', photoId)
+    console.log('PhotoContext: GIVING CONSENT - Starting process...')
+    console.log('PhotoContext: Photo ID:', photoId)
+    console.log('PhotoContext: Child Name:', childName)
+    
+    // Get the current photo before any changes
+    const currentPhoto = photos.find(p => p.id === photoId)
+    if (!currentPhoto) {
+      console.error('PhotoContext: Photo not found for consent operation')
+      return
+    }
+    
+    console.log('PhotoContext: Current photo before consent change:', {
+      id: currentPhoto.id,
+      url: currentPhoto.url,
+      currentDisplayUrl: currentPhoto.currentDisplayUrl,
+      consentGiven: currentPhoto.consentGiven,
+      consentPending: currentPhoto.consentPending
+    })
 
     // Update consent status
     demoPhotoService.updatePhotoConsent(photoId, childName, 'give')
     
     // Update local state - keep image visible
-    setPhotos(prev =>
-      prev.map(photo =>
+    setPhotos(prev => {
+      const updated = prev.map(photo =>
         photo.id === photoId
           ? {
               ...photo,
               consentGiven: [...photo.consentGiven, childName],
               consentPending: photo.consentPending.filter(child => child !== childName),
-              // Keep the original image visible
+              // CRITICAL: Keep the original image visible
               currentDisplayUrl: photo.url,
               status: 'approved'
             }
           : photo
       )
-    )
+      
+      // Log the updated photo
+      const updatedPhoto = updated.find(p => p.id === photoId)
+      console.log('PhotoContext: Photo after consent update:', {
+        id: updatedPhoto.id,
+        url: updatedPhoto.url,
+        currentDisplayUrl: updatedPhoto.currentDisplayUrl,
+        consentGiven: updatedPhoto.consentGiven,
+        consentPending: updatedPhoto.consentPending
+      })
+      
+      return updated
+    })
+    
     setPendingConsent(prev =>
       prev.map(photo =>
         photo.id === photoId
@@ -220,6 +250,7 @@ export const PhotoProvider = ({ children }) => {
     )
 
     console.log('PhotoContext: Consent given successfully - image remains visible')
+    console.log('PhotoContext: Final photo state should have URL:', currentPhoto.url)
   }
 
   const revokeConsent = async (photoId, childName) => {
@@ -228,26 +259,56 @@ export const PhotoProvider = ({ children }) => {
       return
     }
 
-    console.log('PhotoContext: Revoking consent for', childName, 'in photo', photoId)
+    console.log('PhotoContext: REVOKING CONSENT - Starting process...')
+    console.log('PhotoContext: Photo ID:', photoId)
+    console.log('PhotoContext: Child Name:', childName)
+    
+    // Get the current photo before any changes
+    const currentPhoto = photos.find(p => p.id === photoId)
+    if (!currentPhoto) {
+      console.error('PhotoContext: Photo not found for consent operation')
+      return
+    }
+    
+    console.log('PhotoContext: Current photo before consent change:', {
+      id: currentPhoto.id,
+      url: currentPhoto.url,
+      currentDisplayUrl: currentPhoto.currentDisplayUrl,
+      consentGiven: currentPhoto.consentGiven,
+      consentPending: currentPhoto.consentPending
+    })
 
     // Update consent status
     demoPhotoService.updatePhotoConsent(photoId, childName, 'revoke')
     
     // Update local state - keep image visible
-    setPhotos(prev =>
-      prev.map(photo =>
+    setPhotos(prev => {
+      const updated = prev.map(photo =>
         photo.id === photoId
           ? {
               ...photo,
               consentGiven: photo.consentGiven.filter(child => child !== childName),
               consentPending: [...photo.consentPending, childName],
-              // Keep the original image visible
+              // CRITICAL: Keep the original image visible
               currentDisplayUrl: photo.url,
               status: 'approved'
             }
           : photo
       )
-    )
+      
+      // Log the updated photo
+      const updatedPhoto = updated.find(p => p.id === photoId)
+      console.log('PhotoContext: Photo after consent update:', {
+        id: updatedPhoto.id,
+        url: updatedPhoto.url,
+        currentDisplayUrl: updatedPhoto.currentDisplayUrl,
+        consentGiven: updatedPhoto.consentGiven,
+        consentPending: updatedPhoto.consentPending
+      })
+      
+      return updated
+    })
+    
     setPendingConsent(prev =>
       prev.map(photo =>
         photo.id === photoId
@@ -261,6 +322,7 @@ export const PhotoProvider = ({ children }) => {
     )
 
     console.log('PhotoContext: Consent revoked successfully - image remains visible')
+    console.log('PhotoContext: Final photo state should have URL:', currentPhoto.url)
   }
 
   const deletePhoto = (photoId) => {

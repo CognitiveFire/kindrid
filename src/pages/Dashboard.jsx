@@ -188,13 +188,25 @@ const Dashboard = () => {
   }
 
   const renderPhotoImage = (photo) => {
+    console.log('Dashboard: Rendering photo image:', {
+      id: photo.id,
+      title: photo.title,
+      url: photo.url,
+      currentDisplayUrl: photo.currentDisplayUrl,
+      maskedUrl: photo.maskedUrl,
+      status: photo.status
+    })
+    
     // Always prioritize the original URL to prevent images from disappearing
     // Only fall back to other URLs if the original is completely unavailable
     let imageUrl = photo.url || photo.currentDisplayUrl || photo.maskedUrl
     
+    console.log('Dashboard: Selected image URL:', imageUrl)
+    
     if (imageUrl) {
       // Check if it's a data URL (SVG placeholder)
       if (imageUrl.startsWith('data:')) {
+        console.log('Dashboard: Using data URL image')
         return (
           <img 
             src={imageUrl} 
@@ -205,16 +217,22 @@ const Dashboard = () => {
       }
       // Check if it's a blob URL
       if (imageUrl.startsWith('blob:')) {
+        console.log('Dashboard: Using blob URL image')
         return (
           <img 
             src={imageUrl} 
             alt={photo.title}
             className="w-full h-48 object-cover"
+            onError={(e) => {
+              console.error('Dashboard: Blob image failed to load:', imageUrl)
+              console.error('Dashboard: Error details:', e)
+            }}
           />
         )
       }
       // Check if it's a regular file path (like /1.jpg, /2.jpg, etc.)
       if (imageUrl.startsWith('/')) {
+        console.log('Dashboard: Using file path image')
         return (
           <img 
             src={imageUrl} 
@@ -226,6 +244,7 @@ const Dashboard = () => {
       // Check if it's a masked URL with query parameters - strip them for display
       if (imageUrl.includes('?masked=true')) {
         const baseUrl = imageUrl.split('?')[0]
+        console.log('Dashboard: Using masked URL (stripped):', baseUrl)
         return (
           <div className="relative">
             <img 
@@ -244,13 +263,15 @@ const Dashboard = () => {
       }
       
       // For any other URL type, try to display it
+      console.log('Dashboard: Using fallback URL type')
       return (
         <img 
           src={imageUrl} 
           alt={photo.title}
           className="w-full h-48 object-cover"
           onError={(e) => {
-            console.error('Image failed to load:', imageUrl)
+            console.error('Dashboard: Image failed to load:', imageUrl)
+            console.error('Dashboard: Photo details:', photo)
             // If image fails, show placeholder
             e.target.style.display = 'none'
             e.target.nextSibling.style.display = 'block'
@@ -260,11 +281,13 @@ const Dashboard = () => {
     }
     
     // Fallback placeholder
+    console.log('Dashboard: No valid image URL found, showing placeholder')
     return (
       <div className="w-full h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
         <div className="text-center">
           <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
           <p className="text-xs text-gray-500">{photo.title}</p>
+          <p className="text-xs text-red-500">No image URL available</p>
         </div>
       </div>
     )
