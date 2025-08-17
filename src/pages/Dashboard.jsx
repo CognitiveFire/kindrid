@@ -27,6 +27,7 @@ const Dashboard = () => {
   const [editingPhoto, setEditingPhoto] = useState(null)
   const [deletingPhoto, setDeletingPhoto] = useState(null)
   const [reviewingPhoto, setReviewingPhoto] = useState(null)
+  const [processingConsent, setProcessingConsent] = useState(new Set()) // Track which photos are being processed
 
   const stats = [
     {
@@ -118,6 +119,9 @@ const Dashboard = () => {
 
   const handleGiveConsent = async (photoId, childName) => {
     try {
+      // Set loading state
+      setProcessingConsent(prev => new Set([...prev, `${photoId}-${childName}`]))
+      
       await giveConsent(photoId, childName)
       // Refresh the photo data
       const updatedPhoto = photos.find(p => p.id === photoId)
@@ -126,11 +130,21 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error giving consent:', error)
+    } finally {
+      // Clear loading state
+      setProcessingConsent(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(`${photoId}-${childName}`)
+        return newSet
+      })
     }
   }
 
   const handleDenyConsent = async (photoId, childName) => {
     try {
+      // Set loading state
+      setProcessingConsent(prev => new Set([...prev, `${photoId}-${childName}`]))
+      
       // This will trigger AI masking for the denied child
       await revokeConsent(photoId, childName)
       // Refresh the photo data
@@ -140,11 +154,21 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error denying consent:', error)
+    } finally {
+      // Clear loading state
+      setProcessingConsent(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(`${photoId}-${childName}`)
+        return newSet
+      })
     }
   }
 
   const handleRevokeConsent = async (photoId, childName) => {
     try {
+      // Set loading state
+      setProcessingConsent(prev => new Set([...prev, `${photoId}-${childName}`]))
+      
       await revokeConsent(photoId, childName)
       // Refresh the photo data
       const updatedPhoto = photos.find(p => p.id === photoId)
@@ -153,6 +177,13 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error revoking consent:', error)
+    } finally {
+      // Clear loading state
+      setProcessingConsent(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(`${photoId}-${childName}`)
+        return newSet
+      })
     }
   }
 
@@ -584,6 +615,19 @@ const Dashboard = () => {
 
               {/* Photo Display */}
               <div className="mb-6">
+                {/* Processing Indicator */}
+                {reviewingPhoto.status === 'ai_processing' && (
+                  <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <div className="flex items-center space-x-2 text-purple-700">
+                      <Brain className="w-5 h-5 animate-pulse" />
+                      <span className="text-sm font-medium">AI is processing this photo...</span>
+                    </div>
+                    <p className="text-xs text-purple-600 mt-1">
+                      This may take a few seconds. The image will remain visible during processing.
+                    </p>
+                  </div>
+                )}
+                
                 <div className="relative">
                   {renderPhotoImage(reviewingPhoto)}
                   <div className="absolute top-2 right-2 bg-white bg-opacity-90 px-2 py-1 rounded text-xs text-gray-600">
@@ -624,23 +668,38 @@ const Dashboard = () => {
                               <div className="flex space-x-2">
                                 <button
                                   onClick={() => handleGiveConsent(reviewingPhoto.id, child)}
-                                  className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                                  disabled={processingConsent.has(`${reviewingPhoto.id}-${child}`)}
+                                  className={`px-3 py-1 text-xs rounded transition-colors ${
+                                    processingConsent.has(`${reviewingPhoto.id}-${child}`)
+                                      ? 'bg-gray-400 text-white cursor-not-allowed'
+                                      : 'bg-green-600 text-white hover:bg-green-700'
+                                  }`}
                                 >
-                                  Approve
+                                  {processingConsent.has(`${reviewingPhoto.id}-${child}`) ? 'Processing...' : 'Approve'}
                                 </button>
                                 <button
                                   onClick={() => handleDenyConsent(reviewingPhoto.id, child)}
-                                  className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                                  disabled={processingConsent.has(`${reviewingPhoto.id}-${child}`)}
+                                  className={`px-3 py-1 text-xs rounded transition-colors ${
+                                    processingConsent.has(`${reviewingPhoto.id}-${child}`)
+                                      ? 'bg-gray-400 text-white cursor-not-allowed'
+                                      : 'bg-red-600 text-white hover:bg-red-700'
+                                  }`}
                                 >
-                                  Deny
+                                  {processingConsent.has(`${reviewingPhoto.id}-${child}`) ? 'Processing...' : 'Deny'}
                                 </button>
                               </div>
                             ) : (
                               <button
                                 onClick={() => handleRevokeConsent(reviewingPhoto.id, child)}
-                                className="px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                                disabled={processingConsent.has(`${reviewingPhoto.id}-${child}`)}
+                                className={`px-3 py-1 text-xs rounded transition-colors ${
+                                  processingConsent.has(`${reviewingPhoto.id}-${child}`)
+                                    ? 'bg-gray-400 text-white cursor-not-allowed'
+                                    : 'bg-yellow-600 text-white hover:bg-yellow-700'
+                                }`}
                               >
-                                Revoke
+                                {processingConsent.has(`${reviewingPhoto.id}-${child}`) ? 'Processing...' : 'Revoke'}
                               </button>
                             )}
                           </div>

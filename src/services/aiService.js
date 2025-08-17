@@ -4,7 +4,7 @@
 class AIService {
   constructor() {
     this.processingQueue = new Map()
-    this.processingTime = 3000 // 3 seconds for demo
+    this.processingTime = 500 // Reduced from 3000ms to 500ms for demo
   }
 
   // Simulate AI processing of uploaded photos
@@ -82,13 +82,13 @@ class AIService {
             seamless: true,
             artifacts: 'minimal'
           },
-          processingTime: '2.3s',
+          processingTime: '0.8s', // Reduced from 2.3s
           aiModel: 'ClassVault-2.1'
         }
         
         console.log(`✅ Person removal and background rebuild complete`)
         resolve(result)
-      }, 2000)
+      }, 800) // Reduced from 2000ms
     })
   }
 
@@ -131,7 +131,7 @@ class AIService {
             'Enhanced privacy masking'
           ]
         })
-      }, 5000)
+      }, 2000) // Reduced from 5000ms
     })
   }
 
@@ -140,33 +140,33 @@ class AIService {
     console.log(`🤖 AI processing consent change: ${consentAction} for ${childName} in photo ${photoId}`)
     
     return new Promise((resolve) => {
-              setTimeout(() => {
-          let result
-          
-          if (consentAction === 'revoke') {
-            // CORE FUNCTION: Mask child in photo when consent is denied
-            result = {
-              success: true,
-              photoId,
-              action: 'consent_revoked',
-              childName,
-              processing: {
-                method: 'AI_person_masking',
-                type: 'identity_masking',
-                backgroundReconstruction: 'minimal',
-                privacyLevel: 'maximum'
-              },
-              output: {
-                originalPhoto: `photo_${photoId}_original.jpg`,
-                maskedPhoto: `photo_${photoId}_masked_${childName}.jpg`,
-                childMasked: true,
-                backgroundPreserved: true,
-                privacyLevel: 'maximum'
-              },
-              aiModel: 'ClassVault-2.1',
-              processingTime: '1.2s',
-              description: `${childName} has been masked in this photo due to lack of consent - identity protected while maintaining photo composition`
-            }
+      setTimeout(() => {
+        let result
+        
+        if (consentAction === 'revoke') {
+          // CORE FUNCTION: Mask child in photo when consent is denied
+          result = {
+            success: true,
+            photoId,
+            action: 'consent_revoked',
+            childName,
+            processing: {
+              method: 'AI_person_masking',
+              type: 'identity_masking',
+              backgroundReconstruction: 'minimal',
+              privacyLevel: 'maximum'
+            },
+            output: {
+              originalPhoto: `photo_${photoId}_original.jpg`,
+              maskedPhoto: `photo_${photoId}_masked_${childName}.jpg`,
+              childMasked: true,
+              backgroundPreserved: true,
+              privacyLevel: 'maximum'
+            },
+            aiModel: 'ClassVault-2.1',
+            processingTime: '0.3s', // Reduced from 1.2s
+            description: `${childName} has been masked in this photo due to lack of consent - identity protected while maintaining photo composition`
+          }
         } else if (consentAction === 'approve_all') {
           // Restore original photo when all children have consent
           result = {
@@ -185,9 +185,9 @@ class AIService {
               privacyLevel: 'none',
               allChildrenVisible: true
             },
-                          aiModel: 'ClassVault-2.1',
-              processingTime: '0.8s',
-              description: 'All children have consent - original photo restored'
+            aiModel: 'ClassVault-2.1',
+            processingTime: '0.2s', // Reduced from 0.8s
+            description: 'All children have consent - original photo restored'
           }
         } else if (consentAction === 'partial_approval') {
           // Handle mixed consent - mask denied children, show approved children
@@ -210,9 +210,9 @@ class AIService {
               backgroundPreserved: true,
               privacyLevel: 'partial'
             },
-                          aiModel: 'ClassVault-2.1',
-              processingTime: '1.8s',
-              description: 'Photo masked to show approved children while protecting privacy of denied children - composition maintained'
+            aiModel: 'ClassVault-2.1',
+            processingTime: '0.4s', // Reduced from 1.8s
+            description: 'Photo masked to show approved children while protecting privacy of denied children - composition maintained'
           }
         } else {
           // Default case for other consent actions
@@ -232,13 +232,13 @@ class AIService {
               privacyLevel: 'partial'
             },
             aiModel: 'ClassVault-2.1',
-            processingTime: '0.5s'
+            processingTime: '0.1s' // Reduced from 0.5s
           }
         }
         
         console.log(`✅ AI consent processing complete: ${consentAction} for ${childName}`)
         resolve(result)
-      }, 2000)
+      }, 300) // Reduced from 2000ms to 300ms
     })
   }
 
@@ -260,7 +260,7 @@ class AIService {
           success: true,
           learnedFaces,
           totalFaces: childTags.length,
-          learningTime: '4.7s',
+          learningTime: '1.2s', // Reduced from 4.7s
           aiModel: 'ClassVault-2.1',
           nextSteps: [
             'Continue uploading photos with same children',
@@ -271,7 +271,7 @@ class AIService {
         
         console.log(`✅ Face learning complete for ${childTags.length} children`)
         resolve(result)
-      }, 3000)
+      }, 1200) // Reduced from 3000ms
     })
   }
 
@@ -305,13 +305,13 @@ class AIService {
             privacyLevel: childrenWithoutConsent.length > 0 ? 'maximum' : 'none'
           },
           aiModel: 'ClassVault-2.1',
-          processingTime: '4.8s',
+          processingTime: '1.2s', // Reduced from 4.8s
           description: `Group photo masked to show ${childrenWithConsent.length} children with consent. ${childrenWithoutConsent.length} children without consent have been masked for privacy.`
         }
         
         console.log(`✅ Group photo masking complete - privacy protected`)
         resolve(result)
-      }, 4000)
+      }, 1200) // Reduced from 4000ms
     })
   }
 
@@ -364,13 +364,13 @@ class AIService {
             identityProtection: 'maximum'
           },
           aiModel: 'ClassVault-2.1',
-          processingTime: '2.1s',
+          processingTime: '0.6s', // Reduced from 2.1s
           description: `${childName} has been masked using ${maskingType} technique for privacy protection`
         }
         
         console.log(`✅ Privacy masking applied: ${maskingType} for ${childName}`)
         resolve(result)
-      }, 2000)
+      }, 600) // Reduced from 2000ms
     })
   }
 }

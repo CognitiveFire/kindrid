@@ -468,11 +468,14 @@ export const PhotoProvider = ({ children }) => {
           console.log('PhotoContext: Restored original photo - all children approved')
         }
 
+        // Ensure we always have a valid display URL
+        const displayUrl = maskedPhotoUrl || currentPhoto.url
+
         // Update the photo with masked version and AI processing status
         const updatedPhoto = {
           ...currentPhoto,
           maskedUrl: maskedPhotoUrl,
-          currentDisplayUrl: maskedPhotoUrl, // This is what gets displayed
+          currentDisplayUrl: displayUrl, // This is what gets displayed - ensure it's never null
           aiProcessed: true,
           lastMaskingApplied: new Date().toISOString(),
           maskingDetails: {
@@ -488,11 +491,24 @@ export const PhotoProvider = ({ children }) => {
         demoPhotoService.updatePhoto(photoId, updatedPhoto)
         
         console.log('PhotoContext: Photo reprocessed and masked successfully')
+        console.log('PhotoContext: Display URL set to:', displayUrl)
       }
       
       return result
     } catch (error) {
       console.error('PhotoContext: Photo reprocessing failed:', error)
+      // Ensure the photo remains visible even if processing fails
+      const currentPhoto = photos.find(p => p.id === photoId)
+      if (currentPhoto) {
+        const fallbackPhoto = {
+          ...currentPhoto,
+          currentDisplayUrl: currentPhoto.url, // Fallback to original
+          status: 'ai_failed'
+        }
+        updatePhoto(photoId, fallbackPhoto)
+        demoPhotoService.updatePhoto(photoId, fallbackPhoto)
+        console.log('PhotoContext: Photo restored to original after processing failure')
+      }
       throw error
     }
   }
@@ -501,6 +517,14 @@ export const PhotoProvider = ({ children }) => {
   const createMaskedPhotoUrl = (originalUrl, childName, maskingType) => {
     // In a real app, this would call the AI service to actually mask the photo
     // For now, we'll simulate it by creating a modified URL that indicates masking
+    // But we'll keep the original image visible during processing
+    if (!originalUrl) {
+      console.error('PhotoContext: No original URL provided for masking')
+      return null
+    }
+    
+    // For demo purposes, we'll create a visual indicator of masking
+    // In production, this would be the actual AI-processed image
     const baseUrl = originalUrl.split('?')[0]
     const maskedUrl = `${baseUrl}?masked=true&child=${encodeURIComponent(childName)}&type=${maskingType}&timestamp=${Date.now()}`
     
@@ -526,7 +550,7 @@ export const PhotoProvider = ({ children }) => {
         const updatedPhoto = {
           ...currentPhoto,
           maskedUrl: maskedPhotoUrl,
-          currentDisplayUrl: maskedPhotoUrl,
+          currentDisplayUrl: maskedPhotoUrl || currentPhoto.url, // Fallback to original if masking fails
           aiProcessed: true,
           lastMaskingApplied: new Date().toISOString(),
           maskingDetails: {
