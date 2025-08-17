@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePhotos } from '../contexts/PhotoContext'
@@ -28,6 +28,19 @@ const Dashboard = () => {
   const [deletingPhoto, setDeletingPhoto] = useState(null)
   const [reviewingPhoto, setReviewingPhoto] = useState(null)
   const [processingConsent, setProcessingConsent] = useState(new Set()) // Track which photos are being processed
+
+  // Debug: Monitor changes to reviewingPhoto
+  useEffect(() => {
+    if (reviewingPhoto) {
+      console.log('Dashboard: reviewingPhoto state updated:', {
+        id: reviewingPhoto.id,
+        title: reviewingPhoto.title,
+        consentGiven: reviewingPhoto.consentGiven,
+        consentPending: reviewingPhoto.consentPending,
+        status: reviewingPhoto.status
+      })
+    }
+  }, [reviewingPhoto])
 
   const stats = [
     {
@@ -123,9 +136,11 @@ const Dashboard = () => {
       setProcessingConsent(prev => new Set([...prev, `${photoId}-${childName}`]))
       
       await giveConsent(photoId, childName)
-      // Refresh the photo data
+      
+      // Get the updated photo data from the main photos array
       const updatedPhoto = photos.find(p => p.id === photoId)
       if (updatedPhoto) {
+        console.log('Dashboard: Updating reviewingPhoto with new consent data:', updatedPhoto)
         setReviewingPhoto(updatedPhoto)
       }
     } catch (error) {
@@ -147,9 +162,11 @@ const Dashboard = () => {
       
       // This will trigger AI masking for the denied child
       await revokeConsent(photoId, childName)
-      // Refresh the photo data
+      
+      // Get the updated photo data from the main photos array
       const updatedPhoto = photos.find(p => p.id === photoId)
       if (updatedPhoto) {
+        console.log('Dashboard: Updating reviewingPhoto after deny consent:', updatedPhoto)
         setReviewingPhoto(updatedPhoto)
       }
     } catch (error) {
@@ -170,9 +187,11 @@ const Dashboard = () => {
       setProcessingConsent(prev => new Set([...prev, `${photoId}-${childName}`]))
       
       await revokeConsent(photoId, childName)
-      // Refresh the photo data
+      
+      // Get the updated photo data from the main photos array
       const updatedPhoto = photos.find(p => p.id === photoId)
       if (updatedPhoto) {
+        console.log('Dashboard: Updating reviewingPhoto after revoke consent:', updatedPhoto)
         setReviewingPhoto(updatedPhoto)
       }
     } catch (error) {
@@ -694,15 +713,29 @@ const Dashboard = () => {
                     {reviewingPhoto.children.map((child) => {
                       const hasConsent = reviewingPhoto.consentGiven.includes(child)
                       const isPending = reviewingPhoto.consentPending.includes(child)
+                      const isDenied = !hasConsent && !isPending // If not approved and not pending, they're denied
                       
                       return (
                         <div key={child} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                           <span className="font-medium text-gray-900">{child}</span>
                           <div className="flex space-x-2">
                             {hasConsent ? (
-                              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                                ✅ Approved
-                              </span>
+                              <div className="flex items-center space-x-2">
+                                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                  ✅ Approved
+                                </span>
+                                <button
+                                  onClick={() => handleRevokeConsent(reviewingPhoto.id, child)}
+                                  disabled={processingConsent.has(`${reviewingPhoto.id}-${child}`)}
+                                  className={`px-2 py-1 text-xs rounded transition-colors ${
+                                    processingConsent.has(`${reviewingPhoto.id}-${child}`)
+                                      ? 'bg-gray-400 text-white cursor-not-allowed'
+                                      : 'bg-yellow-600 text-white hover:bg-yellow-700'
+                                  }`}
+                                >
+                                  {processingConsent.has(`${reviewingPhoto.id}-${child}`) ? 'Processing...' : 'Revoke'}
+                                </button>
+                              </div>
                             ) : isPending ? (
                               <div className="flex space-x-2">
                                 <button
@@ -728,19 +761,24 @@ const Dashboard = () => {
                                   {processingConsent.has(`${reviewingPhoto.id}-${child}`) ? 'Processing...' : 'Deny'}
                                 </button>
                               </div>
-                            ) : (
-                              <button
-                                onClick={() => handleRevokeConsent(reviewingPhoto.id, child)}
-                                disabled={processingConsent.has(`${reviewingPhoto.id}-${child}`)}
-                                className={`px-3 py-1 text-xs rounded transition-colors ${
-                                  processingConsent.has(`${reviewingPhoto.id}-${child}`)
-                                    ? 'bg-gray-400 text-white cursor-not-allowed'
-                                    : 'bg-yellow-600 text-white hover:bg-yellow-700'
-                                }`}
-                              >
-                                {processingConsent.has(`${reviewingPhoto.id}-${child}`) ? 'Processing...' : 'Revoke'}
-                              </button>
-                            )}
+                            ) : isDenied ? (
+                              <div className="flex items-center space-x-2">
+                                <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                                  ❌ Denied
+                                </span>
+                                <button
+                                  onClick={() => handleGiveConsent(reviewingPhoto.id, child)}
+                                  disabled={processingConsent.has(`${reviewingPhoto.id}-${child}`)}
+                                  className={`px-3 py-1 text-xs rounded transition-colors ${
+                                    processingConsent.has(`${reviewingPhoto.id}-${child}`)
+                                      ? 'bg-gray-400 text-white cursor-not-allowed'
+                                      : 'bg-green-600 text-white hover:bg-green-700'
+                                  }`}
+                                >
+                                  {processingConsent.has(`${reviewingPhoto.id}-${child}`) ? 'Processing...' : 'Approve'}
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       )
