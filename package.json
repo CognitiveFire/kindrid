@@ -10,7 +10,6 @@
     "preview": "vite preview --port $PORT",
     "start": "node server.js",
     "railway-start": "NODE_ENV=production node minimal-server.js",
-    "deploy": "npm run build && git add dist -f && git commit -m 'deploy' && git subtree push --prefix dist origin gh-pages",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
