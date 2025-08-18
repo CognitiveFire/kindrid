@@ -249,6 +249,28 @@ export const PhotoProvider = ({ children }) => {
       )
     )
 
+    // Check if we need to trigger AI masking for remaining pending children
+    const updatedPhoto = photos.find(p => p.id === photoId)
+    if (updatedPhoto) {
+      const newConsentGiven = [...updatedPhoto.consentGiven, childName]
+      const newConsentPending = updatedPhoto.consentPending.filter(child => child !== childName)
+      
+      if (newConsentPending.length > 0) {
+        // Some children still pending - trigger AI masking for them
+        try {
+          console.log('PhotoContext: Some children still pending, triggering AI masking for:', newConsentPending)
+          for (const pendingChild of newConsentPending) {
+            const maskingResult = await aiService.applyPrivacyMasking(photoId, pendingChild, 'ai_removal')
+            if (maskingResult.success) {
+              console.log('PhotoContext: AI masking completed for pending child:', pendingChild)
+            }
+          }
+        } catch (error) {
+          console.error('PhotoContext: AI masking error for pending children:', error)
+        }
+      }
+    }
+
     console.log('PhotoContext: Consent given successfully - image remains visible')
     console.log('PhotoContext: Final photo state should have URL:', currentPhoto.url)
   }
@@ -320,6 +342,39 @@ export const PhotoProvider = ({ children }) => {
           : photo
       )
     )
+
+    // TRIGGER AI MASKING for the revoked child
+    try {
+      console.log('PhotoContext: Triggering AI masking for revoked child:', childName)
+      const maskingResult = await aiService.applyPrivacyMasking(photoId, childName, 'ai_removal')
+      
+      if (maskingResult.success) {
+        console.log('PhotoContext: AI masking completed successfully for:', childName)
+        // Update the photo with masking info but keep image visible
+        setPhotos(prev =>
+          prev.map(photo =>
+            photo.id === photoId
+              ? {
+                  ...photo,
+                  maskingInfo: {
+                    action: 'consent_revoked',
+                    childName,
+                    technique: 'ai_removal',
+                    appliedAt: new Date().toISOString(),
+                    maskedChildren: [childName]
+                  },
+                  aiProcessed: true,
+                  lastMaskingApplied: new Date().toISOString()
+                }
+              : photo
+          )
+        )
+      } else {
+        console.error('PhotoContext: AI masking failed for:', childName)
+      }
+    } catch (error) {
+      console.error('PhotoContext: AI masking error for:', childName, error)
+    }
 
     console.log('PhotoContext: Consent revoked successfully - image remains visible')
     console.log('PhotoContext: Final photo state should have URL:', currentPhoto.url)

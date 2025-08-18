@@ -714,10 +714,18 @@ const Dashboard = () => {
                       const hasConsent = reviewingPhoto.consentGiven.includes(child)
                       const isPending = reviewingPhoto.consentPending.includes(child)
                       const isDenied = !hasConsent && !isPending // If not approved and not pending, they're denied
+                      const isMasked = reviewingPhoto.maskingInfo?.maskedChildren?.includes(child)
                       
                       return (
                         <div key={child} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                          <span className="font-medium text-gray-900">{child}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium text-gray-900">{child}</span>
+                            {isMasked && (
+                              <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                                🎭 AI Masked
+                              </span>
+                            )}
+                          </div>
                           <div className="flex space-x-2">
                             {hasConsent ? (
                               <div className="flex items-center space-x-2">
