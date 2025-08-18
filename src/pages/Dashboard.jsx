@@ -204,6 +204,10 @@ const Dashboard = () => {
   }
 
   const renderPhotoImage = (photo) => {
+    // Check if this photo has any masked children
+    const hasMaskedChildren = photo.maskingInfo?.maskedChildren?.length > 0
+    const maskedCount = photo.maskingInfo?.maskedChildren?.length || 0
+    
     console.log('Dashboard: Rendering photo image:', {
       id: photo.id,
       title: photo.title,
@@ -211,7 +215,9 @@ const Dashboard = () => {
       currentDisplayUrl: photo.currentDisplayUrl,
       maskedUrl: photo.maskedUrl,
       status: photo.status,
-      maskingInfo: photo.maskingInfo
+      maskingInfo: photo.maskingInfo,
+      hasMaskedChildren,
+      maskedCount
     })
     
     // Always prioritize the original URL to prevent images from disappearing
@@ -219,9 +225,6 @@ const Dashboard = () => {
     let imageUrl = photo.url || photo.currentDisplayUrl || photo.maskedUrl
     
     console.log('Dashboard: Selected image URL:', imageUrl)
-    
-    // Check if this photo has any masked children
-    const hasMaskedChildren = photo.maskingInfo?.maskedChildren?.length > 0
     
     if (imageUrl) {
       // Check if it's a data URL (SVG placeholder)
@@ -240,7 +243,7 @@ const Dashboard = () => {
                   <div className="text-lg mb-1">🎭</div>
                   <span className="text-xs font-medium text-gray-700">AI Masked</span>
                   <div className="text-xs text-gray-500 mt-1">
-                    {photo.maskingInfo.maskedChildren.length} child{photo.maskingInfo.maskedChildren.length > 1 ? 'ren' : ''} masked
+                    {maskedCount} child{maskedCount > 1 ? 'ren' : ''} masked
                   </div>
                 </div>
               </div>
@@ -268,7 +271,7 @@ const Dashboard = () => {
                   <div className="text-lg mb-1">🎭</div>
                   <span className="text-xs font-medium text-gray-700">AI Masked</span>
                   <div className="text-xs text-gray-500 mt-1">
-                    {photo.maskingInfo.maskedChildren.length} child{photo.maskingInfo.maskedChildren.length > 1 ? 'ren' : ''} masked
+                    {maskedCount} child{maskedCount > 1 ? 'ren' : ''} masked
                   </div>
                 </div>
               </div>
@@ -292,7 +295,7 @@ const Dashboard = () => {
                   <div className="text-lg mb-1">🎭</div>
                   <span className="text-xs font-medium text-gray-700">AI Masked</span>
                   <div className="text-xs text-gray-500 mt-1">
-                    {photo.maskingInfo.maskedChildren.length} child{photo.maskingInfo.maskedChildren.length > 1 ? 'ren' : ''} masked
+                    {maskedCount} child{maskedCount > 1 ? 'ren' : ''} masked
                   </div>
                 </div>
               </div>
@@ -343,7 +346,7 @@ const Dashboard = () => {
                 <div className="text-lg mb-1">🎭</div>
                 <span className="text-xs font-medium text-gray-700">AI Masked</span>
                 <div className="text-xs text-gray-500 mt-1">
-                  {photo.maskingInfo.maskedChildren.length} child{photo.maskingInfo.maskedChildren.length > 1 ? 'ren' : ''} masked
+                  {maskedCount} child{maskedCount > 1 ? 'ren' : ''} masked
                 </div>
               </div>
             </div>
