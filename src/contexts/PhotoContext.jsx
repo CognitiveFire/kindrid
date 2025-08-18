@@ -83,12 +83,16 @@ export const PhotoProvider = ({ children }) => {
 
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
-    // Create blob URL for the uploaded file
-    const blobUrl = URL.createObjectURL(file)
+    // Convert file to data URL for persistence (prevents disappearing on refresh)
+    const dataUrl = await new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.readAsDataURL(file)
+    })
 
     const newPhoto = {
       id: uniqueId,
-      url: blobUrl, // Use the blob URL directly
+      url: dataUrl, // Use data URL instead of blob URL for persistence
       title: metadata.title,
       description: metadata.description,
       date: new Date().toISOString().split('T')[0],
@@ -106,7 +110,6 @@ export const PhotoProvider = ({ children }) => {
     const existingPhoto = photos.find(p => p.id === uniqueId)
     if (existingPhoto) {
       console.error('PhotoContext: Photo with this ID already exists:', uniqueId)
-      URL.revokeObjectURL(blobUrl)
       return null
     }
 
@@ -114,7 +117,6 @@ export const PhotoProvider = ({ children }) => {
     const addedPhoto = demoPhotoService.addPhoto(newPhoto)
     if (!addedPhoto) {
       console.error('PhotoContext: Failed to add photo to demo service')
-      URL.revokeObjectURL(blobUrl)
       return null
     }
     console.log('PhotoContext: Added photo to demo service')
@@ -206,6 +208,10 @@ export const PhotoProvider = ({ children }) => {
       consentPending: currentPhoto.consentPending
     })
 
+    // Calculate new consent values
+    const newConsentGiven = [...currentPhoto.consentGiven, childName]
+    const newConsentPending = currentPhoto.consentPending.filter(child => child !== childName)
+
     // Update consent status
     demoPhotoService.updatePhotoConsent(photoId, childName, 'give')
     
@@ -215,8 +221,8 @@ export const PhotoProvider = ({ children }) => {
         photo.id === photoId
           ? {
               ...photo,
-              consentGiven: [...photo.consentGiven, childName],
-              consentPending: photo.consentPending.filter(child => child !== childName),
+              consentGiven: newConsentGiven,
+              consentPending: newConsentPending,
               // CRITICAL: Keep the original image visible
               currentDisplayUrl: photo.url,
               status: 'approved'
@@ -242,32 +248,45 @@ export const PhotoProvider = ({ children }) => {
         photo.id === photoId
           ? {
               ...photo,
-              consentGiven: [...photo.consentGiven, childName],
-              consentPending: photo.consentPending.filter(child => child !== childName)
+              consentGiven: newConsentGiven,
+              consentPending: newConsentPending
           }
           : photo
       )
     )
 
     // Check if we need to trigger AI masking for remaining pending children
-    const updatedPhoto = photos.find(p => p.id === photoId)
-    if (updatedPhoto) {
-      const newConsentGiven = [...updatedPhoto.consentGiven, childName]
-      const newConsentPending = updatedPhoto.consentPending.filter(child => child !== childName)
-      
-      if (newConsentPending.length > 0) {
-        // Some children still pending - trigger AI masking for them
-        try {
-          console.log('PhotoContext: Some children still pending, triggering AI masking for:', newConsentPending)
-          for (const pendingChild of newConsentPending) {
-            const maskingResult = await aiService.applyPrivacyMasking(photoId, pendingChild, 'ai_removal')
-            if (maskingResult.success) {
-              console.log('PhotoContext: AI masking completed for pending child:', pendingChild)
-            }
+    if (newConsentPending.length > 0) {
+      // Some children still pending - trigger AI masking for them
+      try {
+        console.log('PhotoContext: Some children still pending, triggering AI masking for:', newConsentPending)
+        for (const pendingChild of newConsentPending) {
+          const maskingResult = await aiService.applyPrivacyMasking(photoId, pendingChild, 'ai_removal')
+          if (maskingResult.success) {
+            console.log('PhotoContext: AI masking completed for pending child:', pendingChild)
+            // Update the photo with masking info
+            setPhotos(prev =>
+              prev.map(photo =>
+                photo.id === photoId
+                  ? {
+                      ...photo,
+                      maskingInfo: {
+                        action: 'partial_consent',
+                        childName: pendingChild,
+                        technique: 'ai_removal',
+                        appliedAt: new Date().toISOString(),
+                        maskedChildren: [...(photo.maskingInfo?.maskedChildren || []), pendingChild]
+                      },
+                      aiProcessed: true,
+                      lastMaskingApplied: new Date().toISOString()
+                    }
+                  : photo
+              )
+            )
           }
-        } catch (error) {
-          console.error('PhotoContext: AI masking error for pending children:', error)
         }
+      } catch (error) {
+        console.error('PhotoContext: AI masking error for pending children:', error)
       }
     }
 
@@ -300,6 +319,10 @@ export const PhotoProvider = ({ children }) => {
       consentPending: currentPhoto.consentPending
     })
 
+    // Calculate new consent values
+    const newConsentGiven = currentPhoto.consentGiven.filter(child => child !== childName)
+    const newConsentPending = [...currentPhoto.consentPending, childName]
+
     // Update consent status
     demoPhotoService.updatePhotoConsent(photoId, childName, 'revoke')
     
@@ -309,8 +332,8 @@ export const PhotoProvider = ({ children }) => {
         photo.id === photoId
           ? {
               ...photo,
-              consentGiven: photo.consentGiven.filter(child => child !== childName),
-              consentPending: [...photo.consentPending, childName],
+              consentGiven: newConsentGiven,
+              consentPending: newConsentPending,
               // CRITICAL: Keep the original image visible
               currentDisplayUrl: photo.url,
               status: 'approved'
@@ -336,8 +359,8 @@ export const PhotoProvider = ({ children }) => {
         photo.id === photoId
           ? {
               ...photo,
-              consentGiven: photo.consentGiven.filter(child => child !== childName),
-              consentPending: [...photo.consentPending, childName]
+              consentGiven: newConsentGiven,
+              consentPending: newConsentPending
             }
           : photo
       )
@@ -361,7 +384,7 @@ export const PhotoProvider = ({ children }) => {
                     childName,
                     technique: 'ai_removal',
                     appliedAt: new Date().toISOString(),
-                    maskedChildren: [childName]
+                    maskedChildren: [...(photo.maskingInfo?.maskedChildren || []), childName]
                   },
                   aiProcessed: true,
                   lastMaskingApplied: new Date().toISOString()
@@ -387,10 +410,6 @@ export const PhotoProvider = ({ children }) => {
       return
     }
 
-    const photoToDelete = photos.find(p => p.id === photoId)
-    if (photoToDelete && photoToDelete.url && photoToDelete.url.startsWith('blob:')) {
-      URL.revokeObjectURL(photoToDelete.url)
-    }
     demoPhotoService.removePhoto(photoId)
     setPhotos(prev => prev.filter(p => p.id !== photoId))
     setPendingConsent(prev => prev.filter(p => p.id !== photoId))
