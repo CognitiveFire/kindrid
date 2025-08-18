@@ -135,13 +135,12 @@ const Dashboard = () => {
       // Set loading state
       setProcessingConsent(prev => new Set([...prev, `${photoId}-${childName}`]))
       
-      await giveConsent(photoId, childName)
-      
-      // Get the updated photo data from the main photos array
-      const updatedPhoto = photos.find(p => p.id === photoId)
+      const updatedPhoto = await giveConsent(photoId, childName)
       if (updatedPhoto) {
-        console.log('Dashboard: Updating reviewingPhoto with new consent data:', updatedPhoto)
+        console.log('Dashboard: Got updated photo from giveConsent:', updatedPhoto)
         setReviewingPhoto(updatedPhoto)
+      } else {
+        console.error('Dashboard: No updated photo returned from giveConsent')
       }
     } catch (error) {
       console.error('Error giving consent:', error)
@@ -161,13 +160,12 @@ const Dashboard = () => {
       setProcessingConsent(prev => new Set([...prev, `${photoId}-${childName}`]))
       
       // This will trigger AI masking for the denied child
-      await revokeConsent(photoId, childName)
-      
-      // Get the updated photo data from the main photos array
-      const updatedPhoto = photos.find(p => p.id === photoId)
+      const updatedPhoto = await revokeConsent(photoId, childName)
       if (updatedPhoto) {
-        console.log('Dashboard: Updating reviewingPhoto after deny consent:', updatedPhoto)
+        console.log('Dashboard: Got updated photo from deny consent:', updatedPhoto)
         setReviewingPhoto(updatedPhoto)
+      } else {
+        console.error('Dashboard: No updated photo returned from deny consent')
       }
     } catch (error) {
       console.error('Error denying consent:', error)
@@ -186,13 +184,12 @@ const Dashboard = () => {
       // Set loading state
       setProcessingConsent(prev => new Set([...prev, `${photoId}-${childName}`]))
       
-      await revokeConsent(photoId, childName)
-      
-      // Get the updated photo data from the main photos array
-      const updatedPhoto = photos.find(p => p.id === photoId)
+      const updatedPhoto = await revokeConsent(photoId, childName)
       if (updatedPhoto) {
-        console.log('Dashboard: Updating reviewingPhoto after revoke consent:', updatedPhoto)
+        console.log('Dashboard: Got updated photo from revoke consent:', updatedPhoto)
         setReviewingPhoto(updatedPhoto)
+      } else {
+        console.error('Dashboard: No updated photo returned from revoke consent')
       }
     } catch (error) {
       console.error('Error revoking consent:', error)
@@ -213,7 +210,8 @@ const Dashboard = () => {
       url: photo.url,
       currentDisplayUrl: photo.currentDisplayUrl,
       maskedUrl: photo.maskedUrl,
-      status: photo.status
+      status: photo.status,
+      maskingInfo: photo.maskingInfo
     })
     
     // Always prioritize the original URL to prevent images from disappearing
@@ -222,42 +220,84 @@ const Dashboard = () => {
     
     console.log('Dashboard: Selected image URL:', imageUrl)
     
+    // Check if this photo has any masked children
+    const hasMaskedChildren = photo.maskingInfo?.maskedChildren?.length > 0
+    
     if (imageUrl) {
       // Check if it's a data URL (SVG placeholder)
       if (imageUrl.startsWith('data:')) {
         console.log('Dashboard: Using data URL image')
         return (
-          <img 
-            src={imageUrl} 
-            alt={photo.title}
-            className="w-full h-48 object-cover"
-          />
+          <div className="relative">
+            <img 
+              src={imageUrl} 
+              alt={photo.title}
+              className="w-full h-48 object-cover"
+            />
+            {hasMaskedChildren && (
+              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-center">
+                  <div className="text-lg mb-1">🎭</div>
+                  <span className="text-xs font-medium text-gray-700">AI Masked</span>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {photo.maskingInfo.maskedChildren.length} child{photo.maskingInfo.maskedChildren.length > 1 ? 'ren' : ''} masked
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )
       }
       // Check if it's a blob URL
       if (imageUrl.startsWith('blob:')) {
         console.log('Dashboard: Using blob URL image')
         return (
-          <img 
-            src={imageUrl} 
-            alt={photo.title}
-            className="w-full h-48 object-cover"
-            onError={(e) => {
-              console.error('Dashboard: Blob image failed to load:', imageUrl)
-              console.error('Dashboard: Error details:', e)
-            }}
-          />
+          <div className="relative">
+            <img 
+              src={imageUrl} 
+              alt={photo.title}
+              className="w-full h-48 object-cover"
+              onError={(e) => {
+                console.error('Dashboard: Blob image failed to load:', imageUrl)
+                console.error('Dashboard: Error details:', e)
+              }}
+            />
+            {hasMaskedChildren && (
+              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-center">
+                  <div className="text-lg mb-1">🎭</div>
+                  <span className="text-xs font-medium text-gray-700">AI Masked</span>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {photo.maskingInfo.maskedChildren.length} child{photo.maskingInfo.maskedChildren.length > 1 ? 'ren' : ''} masked
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )
       }
       // Check if it's a regular file path (like /1.jpg, /2.jpg, etc.)
       if (imageUrl.startsWith('/')) {
         console.log('Dashboard: Using file path image')
         return (
-          <img 
-            src={imageUrl} 
-            alt={photo.title}
-            className="w-full h-48 object-cover"
-          />
+          <div className="relative">
+            <img 
+              src={imageUrl} 
+              alt={photo.title}
+              className="w-full h-48 object-cover"
+            />
+            {hasMaskedChildren && (
+              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-center">
+                  <div className="text-lg mb-1">🎭</div>
+                  <span className="text-xs font-medium text-gray-700">AI Masked</span>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {photo.maskingInfo.maskedChildren.length} child{photo.maskingInfo.maskedChildren.length > 1 ? 'ren' : ''} masked
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )
       }
       // Check if it's a masked URL with query parameters - strip them for display
@@ -284,18 +324,31 @@ const Dashboard = () => {
       // For any other URL type, try to display it
       console.log('Dashboard: Using fallback URL type')
       return (
-        <img 
-          src={imageUrl} 
-          alt={photo.title}
-          className="w-full h-48 object-cover"
-          onError={(e) => {
-            console.error('Dashboard: Image failed to load:', imageUrl)
-            console.error('Dashboard: Photo details:', photo)
-            // If image fails, show placeholder
-            e.target.style.display = 'none'
-            e.target.nextSibling.style.display = 'block'
-          }}
-        />
+        <div className="relative">
+          <img 
+            src={imageUrl} 
+            alt={photo.title}
+            className="w-full h-48 object-cover"
+            onError={(e) => {
+              console.error('Dashboard: Image failed to load:', imageUrl)
+              console.error('Dashboard: Photo details:', photo)
+              // If image fails, show placeholder
+              e.target.style.display = 'none'
+              e.target.nextSibling.style.display = 'block'
+            }}
+          />
+          {hasMaskedChildren && (
+            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+              <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-center">
+                <div className="text-lg mb-1">🎭</div>
+                <span className="text-xs font-medium text-gray-700">AI Masked</span>
+                <div className="text-xs text-gray-500 mt-1">
+                  {photo.maskingInfo.maskedChildren.length} child{photo.maskingInfo.maskedChildren.length > 1 ? 'ren' : ''} masked
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )
     }
     

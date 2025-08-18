@@ -186,7 +186,7 @@ export const PhotoProvider = ({ children }) => {
   const giveConsent = async (photoId, childName) => {
     if (!canManageConsent(photos.find(p => p.id === photoId))) {
       console.error('User cannot manage consent for this photo')
-      return
+      return null
     }
 
     console.log('PhotoContext: GIVING CONSENT - Starting process...')
@@ -197,7 +197,7 @@ export const PhotoProvider = ({ children }) => {
     const currentPhoto = photos.find(p => p.id === photoId)
     if (!currentPhoto) {
       console.error('PhotoContext: Photo not found for consent operation')
-      return
+      return null
     }
     
     console.log('PhotoContext: Current photo before consent change:', {
@@ -215,43 +215,28 @@ export const PhotoProvider = ({ children }) => {
     // Update consent status
     demoPhotoService.updatePhotoConsent(photoId, childName, 'give')
     
+    // Create the updated photo object
+    const updatedPhoto = {
+      ...currentPhoto,
+      consentGiven: newConsentGiven,
+      consentPending: newConsentPending,
+      currentDisplayUrl: currentPhoto.url,
+      status: 'approved'
+    }
+    
     // Update local state - keep image visible
     setPhotos(prev => {
       const updated = prev.map(photo =>
-        photo.id === photoId
-          ? {
-              ...photo,
-              consentGiven: newConsentGiven,
-              consentPending: newConsentPending,
-              // CRITICAL: Keep the original image visible
-              currentDisplayUrl: photo.url,
-              status: 'approved'
-            }
-          : photo
+        photo.id === photoId ? updatedPhoto : photo
       )
       
-      // Log the updated photo
-      const updatedPhoto = updated.find(p => p.id === photoId)
-      console.log('PhotoContext: Photo after consent update:', {
-        id: updatedPhoto.id,
-        url: updatedPhoto.url,
-        currentDisplayUrl: updatedPhoto.currentDisplayUrl,
-        consentGiven: updatedPhoto.consentGiven,
-        consentPending: updatedPhoto.consentPending
-      })
-      
+      console.log('PhotoContext: Updated photos state with new consent')
       return updated
     })
     
     setPendingConsent(prev =>
       prev.map(photo =>
-        photo.id === photoId
-          ? {
-              ...photo,
-              consentGiven: newConsentGiven,
-              consentPending: newConsentPending
-          }
-          : photo
+        photo.id === photoId ? updatedPhoto : photo
       )
     )
 
@@ -265,24 +250,27 @@ export const PhotoProvider = ({ children }) => {
           if (maskingResult.success) {
             console.log('PhotoContext: AI masking completed for pending child:', pendingChild)
             // Update the photo with masking info
+            const maskedPhoto = {
+              ...updatedPhoto,
+              maskingInfo: {
+                action: 'partial_consent',
+                childName: pendingChild,
+                technique: 'ai_removal',
+                appliedAt: new Date().toISOString(),
+                maskedChildren: [...(updatedPhoto.maskingInfo?.maskedChildren || []), pendingChild]
+              },
+              aiProcessed: true,
+              lastMaskingApplied: new Date().toISOString()
+            }
+            
             setPhotos(prev =>
               prev.map(photo =>
-                photo.id === photoId
-                  ? {
-                      ...photo,
-                      maskingInfo: {
-                        action: 'partial_consent',
-                        childName: pendingChild,
-                        technique: 'ai_removal',
-                        appliedAt: new Date().toISOString(),
-                        maskedChildren: [...(photo.maskingInfo?.maskedChildren || []), pendingChild]
-                      },
-                      aiProcessed: true,
-                      lastMaskingApplied: new Date().toISOString()
-                    }
-                  : photo
+                photo.id === photoId ? maskedPhoto : photo
               )
             )
+            
+            // Update the updatedPhoto reference for return
+            Object.assign(updatedPhoto, maskedPhoto)
           }
         }
       } catch (error) {
@@ -292,12 +280,15 @@ export const PhotoProvider = ({ children }) => {
 
     console.log('PhotoContext: Consent given successfully - image remains visible')
     console.log('PhotoContext: Final photo state should have URL:', currentPhoto.url)
+    
+    // Return the updated photo so Dashboard can use it immediately
+    return updatedPhoto
   }
 
   const revokeConsent = async (photoId, childName) => {
     if (!canManageConsent(photos.find(p => p.id === photoId))) {
       console.error('User cannot manage consent for this photo')
-      return
+      return null
     }
 
     console.log('PhotoContext: REVOKING CONSENT - Starting process...')
@@ -308,7 +299,7 @@ export const PhotoProvider = ({ children }) => {
     const currentPhoto = photos.find(p => p.id === photoId)
     if (!currentPhoto) {
       console.error('PhotoContext: Photo not found for consent operation')
-      return
+      return null
     }
     
     console.log('PhotoContext: Current photo before consent change:', {
@@ -326,43 +317,28 @@ export const PhotoProvider = ({ children }) => {
     // Update consent status
     demoPhotoService.updatePhotoConsent(photoId, childName, 'revoke')
     
+    // Create the updated photo object
+    const updatedPhoto = {
+      ...currentPhoto,
+      consentGiven: newConsentGiven,
+      consentPending: newConsentPending,
+      currentDisplayUrl: currentPhoto.url,
+      status: 'approved'
+    }
+    
     // Update local state - keep image visible
     setPhotos(prev => {
       const updated = prev.map(photo =>
-        photo.id === photoId
-          ? {
-              ...photo,
-              consentGiven: newConsentGiven,
-              consentPending: newConsentPending,
-              // CRITICAL: Keep the original image visible
-              currentDisplayUrl: photo.url,
-              status: 'approved'
-            }
-          : photo
+        photo.id === photoId ? updatedPhoto : photo
       )
       
-      // Log the updated photo
-      const updatedPhoto = updated.find(p => p.id === photoId)
-      console.log('PhotoContext: Photo after consent update:', {
-        id: updatedPhoto.id,
-        url: updatedPhoto.url,
-        currentDisplayUrl: updatedPhoto.currentDisplayUrl,
-        consentGiven: updatedPhoto.consentGiven,
-        consentPending: updatedPhoto.consentPending
-      })
-      
+      console.log('PhotoContext: Updated photos state with revoked consent')
       return updated
     })
     
     setPendingConsent(prev =>
       prev.map(photo =>
-        photo.id === photoId
-          ? {
-              ...photo,
-              consentGiven: newConsentGiven,
-              consentPending: newConsentPending
-            }
-          : photo
+        photo.id === photoId ? updatedPhoto : photo
       )
     )
 
@@ -374,24 +350,27 @@ export const PhotoProvider = ({ children }) => {
       if (maskingResult.success) {
         console.log('PhotoContext: AI masking completed successfully for:', childName)
         // Update the photo with masking info but keep image visible
+        const maskedPhoto = {
+          ...updatedPhoto,
+          maskingInfo: {
+            action: 'consent_revoked',
+            childName,
+            technique: 'ai_removal',
+            appliedAt: new Date().toISOString(),
+            maskedChildren: [...(updatedPhoto.maskingInfo?.maskedChildren || []), childName]
+          },
+          aiProcessed: true,
+          lastMaskingApplied: new Date().toISOString()
+        }
+        
         setPhotos(prev =>
           prev.map(photo =>
-            photo.id === photoId
-              ? {
-                  ...photo,
-                  maskingInfo: {
-                    action: 'consent_revoked',
-                    childName,
-                    technique: 'ai_removal',
-                    appliedAt: new Date().toISOString(),
-                    maskedChildren: [...(photo.maskingInfo?.maskedChildren || []), childName]
-                  },
-                  aiProcessed: true,
-                  lastMaskingApplied: new Date().toISOString()
-                }
-              : photo
+            photo.id === photoId ? maskedPhoto : photo
           )
         )
+        
+        // Update the updatedPhoto reference for return
+        Object.assign(updatedPhoto, maskedPhoto)
       } else {
         console.error('PhotoContext: AI masking failed for:', childName)
       }
@@ -401,6 +380,9 @@ export const PhotoProvider = ({ children }) => {
 
     console.log('PhotoContext: Consent revoked successfully - image remains visible')
     console.log('PhotoContext: Final photo state should have URL:', currentPhoto.url)
+    
+    // Return the updated photo so Dashboard can use it immediately
+    return updatedPhoto
   }
 
   const deletePhoto = (photoId) => {
