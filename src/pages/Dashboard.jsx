@@ -220,24 +220,24 @@ const Dashboard = () => {
       maskedCount
     })
     
-    // Always prioritize the original URL to prevent images from disappearing
-    // Only fall back to other URLs if the original is completely unavailable
-    let imageUrl = photo.url || photo.currentDisplayUrl || photo.maskedUrl
+    // Priority: masked photo > original photo > fallbacks
+    let imageUrl = photo.maskedUrl || photo.url || photo.currentDisplayUrl
     
     console.log('Dashboard: Selected image URL:', imageUrl)
+    console.log('Dashboard: Using masked photo:', !!photo.maskedUrl)
     
     if (imageUrl) {
       // Check if it's a data URL (SVG placeholder)
       if (imageUrl.startsWith('data:')) {
         console.log('Dashboard: Using data URL image')
         return (
-          <div className="relative">
+          <div className="relative" data-photo-id={photo.id}>
             <img 
               src={imageUrl} 
               alt={photo.title}
               className="w-full h-48 object-cover"
             />
-            {hasMaskedChildren && (
+            {hasMaskedChildren && !photo.maskedUrl && (
               <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
                 <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-center">
                   <div className="text-lg mb-1">🎭</div>
@@ -246,6 +246,11 @@ const Dashboard = () => {
                     {maskedCount} child{maskedCount > 1 ? 'ren' : ''} masked
                   </div>
                 </div>
+              </div>
+            )}
+            {hasMaskedChildren && photo.maskedUrl && (
+              <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                🔒 AI Masked ({maskedCount})
               </div>
             )}
           </div>
@@ -255,7 +260,7 @@ const Dashboard = () => {
       if (imageUrl.startsWith('blob:')) {
         console.log('Dashboard: Using blob URL image')
         return (
-          <div className="relative">
+          <div className="relative" data-photo-id={photo.id}>
             <img 
               src={imageUrl} 
               alt={photo.title}
@@ -265,7 +270,7 @@ const Dashboard = () => {
                 console.error('Dashboard: Error details:', e)
               }}
             />
-            {hasMaskedChildren && (
+            {hasMaskedChildren && !photo.maskedUrl && (
               <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
                 <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-center">
                   <div className="text-lg mb-1">🎭</div>
@@ -276,6 +281,11 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
+            {hasMaskedChildren && photo.maskedUrl && (
+              <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                🔒 AI Masked ({maskedCount})
+              </div>
+            )}
           </div>
         )
       }
@@ -283,13 +293,13 @@ const Dashboard = () => {
       if (imageUrl.startsWith('/')) {
         console.log('Dashboard: Using file path image')
         return (
-          <div className="relative">
+          <div className="relative" data-photo-id={photo.id}>
             <img 
               src={imageUrl} 
               alt={photo.title}
               className="w-full h-48 object-cover"
             />
-            {hasMaskedChildren && (
+            {hasMaskedChildren && !photo.maskedUrl && (
               <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
                 <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-center">
                   <div className="text-lg mb-1">🎭</div>
@@ -298,6 +308,11 @@ const Dashboard = () => {
                     {maskedCount} child{maskedCount > 1 ? 'ren' : ''} masked
                   </div>
                 </div>
+              </div>
+            )}
+            {hasMaskedChildren && photo.maskedUrl && (
+              <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                🔒 AI Masked ({maskedCount})
               </div>
             )}
           </div>
@@ -308,7 +323,7 @@ const Dashboard = () => {
         const baseUrl = imageUrl.split('?')[0]
         console.log('Dashboard: Using masked URL (stripped):', baseUrl)
         return (
-          <div className="relative">
+          <div className="relative" data-photo-id={photo.id}>
             <img 
               src={baseUrl} 
               alt={photo.title}
@@ -327,7 +342,7 @@ const Dashboard = () => {
       // For any other URL type, try to display it
       console.log('Dashboard: Using fallback URL type')
       return (
-        <div className="relative">
+        <div className="relative" data-photo-id={photo.id}>
           <img 
             src={imageUrl} 
             alt={photo.title}
@@ -340,7 +355,7 @@ const Dashboard = () => {
               e.target.nextSibling.style.display = 'block'
             }}
           />
-          {hasMaskedChildren && (
+          {hasMaskedChildren && !photo.maskedUrl && (
             <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
               <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-center">
                 <div className="text-lg mb-1">🎭</div>
@@ -349,6 +364,11 @@ const Dashboard = () => {
                   {maskedCount} child{maskedCount > 1 ? 'ren' : ''} masked
                 </div>
               </div>
+            </div>
+          )}
+          {hasMaskedChildren && photo.maskedUrl && (
+            <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
+              🔒 AI Masked ({maskedCount})
             </div>
           )}
         </div>

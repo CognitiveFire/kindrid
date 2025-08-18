@@ -319,6 +319,7 @@ export const PhotoProvider = ({ children }) => {
       
       if (maskingResult.success) {
         console.log('PhotoContext: AI masking completed successfully for:', childName)
+        console.log('PhotoContext: Masking result:', maskingResult)
         
         // Use the updatedPhoto directly to avoid race conditions
         // Don't search the photos array again
@@ -331,7 +332,7 @@ export const PhotoProvider = ({ children }) => {
           // Create new masking info - add to existing masked children
           const newMaskedChildren = [...existingMaskedChildren, childName]
           
-          // Update the photo with masking info but keep image visible
+          // Update the photo with masking info and the actual masked photo URL
           const maskedPhoto = {
             ...updatedPhoto,
             maskingInfo: {
@@ -341,6 +342,8 @@ export const PhotoProvider = ({ children }) => {
               appliedAt: new Date().toISOString(),
               maskedChildren: newMaskedChildren
             },
+            // Store the actual masked photo URL for display
+            maskedUrl: maskingResult.output.maskedPhoto,
             aiProcessed: true,
             lastMaskingApplied: new Date().toISOString()
           }
@@ -357,7 +360,8 @@ export const PhotoProvider = ({ children }) => {
           console.log('PhotoContext: Updated masking info:', {
             maskedChildren: newMaskedChildren,
             count: newMaskedChildren.length,
-            action: 'added_new_masking'
+            action: 'added_new_masking',
+            maskedUrl: maskingResult.output.maskedPhoto
           })
         }
       } else {
@@ -370,6 +374,7 @@ export const PhotoProvider = ({ children }) => {
     console.log('PhotoContext: Consent revoked successfully - image remains visible')
     console.log('PhotoContext: Final photo state should have URL:', currentPhoto.url)
     console.log('PhotoContext: Final masking count:', updatedPhoto.maskingInfo?.maskedChildren?.length || 0)
+    console.log('PhotoContext: Final masked URL:', updatedPhoto.maskedUrl)
     
     // Return the updated photo so Dashboard can use it immediately
     return updatedPhoto
