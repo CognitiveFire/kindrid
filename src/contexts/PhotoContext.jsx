@@ -641,7 +641,7 @@ export const PhotoProvider = ({ children }) => {
 
   // Process final consent decisions and apply AI masking
   const processConsentAndApplyMasking = async (photoId, childrenWithConsent, childrenWithoutConsent) => {
-    console.log('PhotoContext: Processing final consent - SIMPLIFIED VERSION')
+    console.log('PhotoContext: Processing final consent - ULTRA SIMPLIFIED VERSION')
     console.log('PhotoContext: Children with consent:', childrenWithConsent)
     console.log('PhotoContext: Children without consent:', childrenWithoutConsent)
     
@@ -656,50 +656,46 @@ export const PhotoProvider = ({ children }) => {
       return null
     }
     
+    console.log('PhotoContext: Processing consent for photo:', currentPhoto.id)
+    
     try {
-      // Update consent status in the photo
+      // Create a simple masked URL (this is just a prototype!)
+      let maskedUrl = null
+      if (childrenWithoutConsent.length > 0) {
+        // For prototype: just add a query parameter to indicate masking
+        maskedUrl = `${currentPhoto.url}?masked=true&children=${childrenWithoutConsent.join(',')}`
+        console.log('PhotoContext: Created simple masked URL:', maskedUrl)
+      }
+      
+      // Update the photo object
       const updatedPhoto = {
         ...currentPhoto,
         consentGiven: childrenWithConsent,
         consentPending: childrenWithoutConsent,
         status: 'approved',
-        aiProcessed: false
-      }
-      
-      // If there are children without consent, create a simple masked version
-      if (childrenWithoutConsent.length > 0) {
-        console.log('PhotoContext: Creating simple masked version for:', childrenWithoutConsent)
-        
-        // For now, just create a simple masked URL by adding a query parameter
-        // In a real implementation, this would be the AI-processed image
-        const maskedUrl = `${currentPhoto.url}?masked=true&children=${childrenWithoutConsent.join(',')}`
-        
-        updatedPhoto.maskedUrl = maskedUrl
-        updatedPhoto.aiProcessed = true
-        updatedPhoto.maskingInfo = {
+        aiProcessed: childrenWithoutConsent.length > 0,
+        maskedUrl: maskedUrl,
+        maskingInfo: childrenWithoutConsent.length > 0 ? {
           action: 'consent_processed',
           maskedChildren: childrenWithoutConsent,
-          technique: 'simple_masking',
+          technique: 'prototype_masking',
           appliedAt: new Date().toISOString()
-        }
-        updatedPhoto.lastMaskingApplied = new Date().toISOString()
-        
-        console.log('PhotoContext: Simple masked version created:', maskedUrl)
+        } : null
       }
       
-      // Update local state
-      setPhotos(prev => {
-        const updated = prev.map(photo =>
-          photo.id === photoId ? updatedPhoto : photo
-        )
-        return updated
-      })
+      console.log('PhotoContext: Updated photo object created')
       
-      setPendingConsent(prev =>
-        prev.map(photo =>
-          photo.id === photoId ? updatedPhoto : photo
-        )
-      )
+      // Update in demo service
+      const serviceUpdatedPhoto = demoPhotoService.updatePhoto(photoId, updatedPhoto)
+      console.log('PhotoContext: Photo updated in demo service:', serviceUpdatedPhoto)
+      
+      // Get fresh data from service
+      const allPhotos = demoPhotoService.getAllPhotos()
+      console.log('PhotoContext: All photos after update:', allPhotos.length)
+      
+      // Update local state
+      setPhotos(allPhotos)
+      setPendingConsent(allPhotos.filter(p => p.status === 'pending_consent'))
       
       console.log('PhotoContext: Consent processing completed successfully')
       return updatedPhoto

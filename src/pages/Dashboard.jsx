@@ -56,24 +56,34 @@ const Dashboard = () => {
 
   // Handle consent management save
   const handleConsentSave = async (photoId, childrenWithConsent, childrenWithoutConsent) => {
-    console.log('Dashboard: Saving consent')
+    console.log('Dashboard: Starting consent save process')
+    console.log('Dashboard: Photo ID:', photoId)
     console.log('Dashboard: Children with consent:', childrenWithConsent)
     console.log('Dashboard: Children without consent:', childrenWithoutConsent)
     
     setProcessingConsent(true)
+    console.log('Dashboard: Set processing consent to true')
     
     try {
+      console.log('Dashboard: About to call processConsentAndApplyMasking...')
+      
       // Use the simplified function that processes all consent
       const updatedPhoto = await processConsentAndApplyMasking(photoId, childrenWithConsent, childrenWithoutConsent)
+      
+      console.log('Dashboard: processConsentAndApplyMasking returned:', updatedPhoto)
       
       if (updatedPhoto) {
         console.log('Dashboard: Consent saved successfully')
         
         // Close the consent management modal
+        console.log('Dashboard: Closing consent management modal...')
         setConsentPhoto(null)
+        console.log('Dashboard: Modal closed')
         
         // Force a re-render to show the updated photo
+        console.log('Dashboard: Setting last update...')
         setLastUpdate(Date.now())
+        console.log('Dashboard: Last update set')
         
         // Show success message
         if (childrenWithoutConsent.length > 0) {
@@ -81,6 +91,8 @@ const Dashboard = () => {
         } else {
           alert('Photo consent saved! All children have consent.')
         }
+        
+        console.log('Dashboard: Success message shown')
       } else {
         console.error('Dashboard: Failed to process consent')
         alert('Error saving consent. Please try again.')
@@ -89,7 +101,9 @@ const Dashboard = () => {
       console.error('Dashboard: Error in handleConsentSave:', error)
       alert('Error saving consent. Please try again.')
     } finally {
+      console.log('Dashboard: Setting processing consent to false')
       setProcessingConsent(false)
+      console.log('Dashboard: Consent save process completed')
     }
   }
 
