@@ -149,7 +149,9 @@ export const PhotoProvider = ({ children }) => {
       setLastUpdate(Date.now())
       
       console.log('PhotoContext: Photo upload and AI processing completed successfully')
-      return updatedPhoto
+      
+      // Return the updated photo and trigger review modal
+      return { ...updatedPhoto, shouldReview: true }
       
     } catch (error) {
       console.error('PhotoContext: Error uploading photo:', error)

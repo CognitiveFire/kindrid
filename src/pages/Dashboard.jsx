@@ -28,7 +28,15 @@ const Dashboard = () => {
   const [editingPhoto, setEditingPhoto] = useState(null)
   const [deletingPhoto, setDeletingPhoto] = useState(null)
   const [reviewingPhoto, setReviewingPhoto] = useState(null)
-  const [processingConsent, setProcessingConsent] = useState(new Set()) // Track which photos are being processed
+  const [processingConsent, setProcessingConsent] = useState({}) // Track which children are being processed
+  const [lastUpdate, setLastUpdate] = useState(Date.now())
+
+  // Handle photo upload completion and automatically open review
+  const handlePhotoUploadComplete = (uploadedPhoto) => {
+    console.log('Dashboard: Photo upload completed, opening review modal for:', uploadedPhoto)
+    setReviewingPhoto(uploadedPhoto)
+    setShowPhotoUpload(false) // Close upload modal
+  }
 
   // Monitor reviewingPhoto changes for debugging
   useEffect(() => {
@@ -566,7 +574,7 @@ const Dashboard = () => {
 
       {/* Photo Upload Modal */}
       {showPhotoUpload && (
-        <PhotoUpload onClose={() => setShowPhotoUpload(false)} />
+        <PhotoUpload onClose={() => setShowPhotoUpload(false)} onUploadComplete={handlePhotoUploadComplete} />
       )}
 
       {/* Edit Photo Modal */}
@@ -753,7 +761,7 @@ const Dashboard = () => {
                   </div>
                 )}
                 
-                <div className="relative">
+                <div className="relative" data-photo-id={reviewingPhoto?.id}>
                   {renderPhotoImage(reviewingPhoto)}
                   <div className="absolute top-2 right-2 bg-white bg-opacity-90 px-2 py-1 rounded text-xs text-gray-600">
                     {reviewingPhoto?.status || 'Unknown'}

@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react'
 import { usePhotos } from '../contexts/PhotoContext'
 import { X, Upload, Camera, Users, MapPin, Calendar, Tag, Eye } from 'lucide-react'
 
-const PhotoUpload = ({ onClose }) => {
+const PhotoUpload = ({ onClose, onUploadComplete }) => {
   const { uploadPhoto, userRole, startFaceLearning } = usePhotos()
   const [formData, setFormData] = useState({
     title: '',
@@ -162,6 +162,14 @@ const PhotoUpload = ({ onClose }) => {
         setTimeout(() => {
           onClose()
         }, 2000)
+        
+        // If the photo should be reviewed, trigger the review modal
+        if (uploadedPhoto.shouldReview) {
+          // Emit an event or callback to open the review modal
+          // This will be handled by the parent component
+          console.log('PhotoUpload: Photo ready for review - should open review modal')
+          onUploadComplete(uploadedPhoto)
+        }
       } else {
         throw new Error('Upload failed - no photo returned')
       }

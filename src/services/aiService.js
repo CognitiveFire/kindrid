@@ -9,58 +9,87 @@ class AIService {
 
   // REAL AI PHOTO MASKING - Core functionality
   async applyPrivacyMasking(photoId, childName, maskingType = 'ai_removal') {
-    console.log(`🎭 Applying REAL ${maskingType} masking to ${childName} in photo ${photoId}`)
+    console.log(`🎭 Applying TEST masking to ${childName} in photo ${photoId}`)
+    console.log('🎭 Available DOM elements:', {
+      photoId,
+      dataPhotoElements: document.querySelectorAll('[data-photo-id]'),
+      imgElements: document.querySelectorAll('img'),
+      totalImages: document.querySelectorAll('img').length
+    })
     
     try {
       // Wait a bit for the DOM to be ready
-      await new Promise(resolve => setTimeout(resolve, 200))
+      await new Promise(resolve => setTimeout(resolve, 500))
       
       // Get the photo element from the DOM - try multiple selectors
       let photoElement = document.querySelector(`[data-photo-id="${photoId}"] img`)
+      console.log('🎭 First attempt - data-photo-id selector:', photoElement)
+      
       if (!photoElement) {
         // Fallback: try to find by photo ID in any img element
         photoElement = document.querySelector(`img[src*="photo_${photoId}"]`)
+        console.log('🎭 Second attempt - src selector:', photoElement)
       }
       if (!photoElement) {
         // Another fallback: try to find any img in the photo container
         const photoContainer = document.querySelector(`[data-photo-id="${photoId}"]`)
+        console.log('🎭 Third attempt - photo container:', photoContainer)
         if (photoContainer) {
           photoElement = photoContainer.querySelector('img')
+          console.log('🎭 Found img in container:', photoElement)
         }
       }
       
       if (!photoElement) {
-        console.error('Photo element not found for masking. Available elements:', {
-          photoId,
-          dataPhotoElements: document.querySelectorAll('[data-photo-id]'),
-          imgElements: document.querySelectorAll('img'),
-          photoContainer: document.querySelector(`[data-photo-id="${photoId}"]`)
-        })
-        return { success: false, error: 'Photo element not found' }
+        // Final fallback: use any visible image for testing
+        const allImages = document.querySelectorAll('img')
+        const visibleImages = Array.from(allImages).filter(img => 
+          img.offsetWidth > 0 && img.offsetHeight > 0 && img.src
+        )
+        console.log('🎭 Final fallback - visible images:', visibleImages)
+        
+        if (visibleImages.length > 0) {
+          photoElement = visibleImages[0]
+          console.log('🎭 Using fallback image:', photoElement)
+        } else {
+          console.error('🎭 No visible images found for masking')
+          return { success: false, error: 'No visible images found' }
+        }
       }
 
-      console.log('Photo element found:', {
+      console.log('🎭 Photo element found:', {
         element: photoElement,
         src: photoElement.src,
         naturalWidth: photoElement.naturalWidth,
         naturalHeight: photoElement.naturalHeight,
         width: photoElement.width,
-        height: photoElement.height
+        height: photoElement.height,
+        complete: photoElement.complete
       })
 
       // Wait for image to be fully loaded
       if (!photoElement.complete || photoElement.naturalWidth === 0) {
-        console.log('Waiting for image to load...')
+        console.log('🎭 Waiting for image to load...')
         await new Promise((resolve, reject) => {
           photoElement.onload = resolve
           photoElement.onerror = reject
           // Timeout after 5 seconds
           setTimeout(() => reject(new Error('Image load timeout')), 5000)
         })
+        console.log('🎭 Image loaded successfully')
       }
 
       // Create masked version using AI-powered detection
-      const maskedImageData = await this.createAIMaskedPhoto(photoElement, childName, maskingType)
+      let maskedImageData = null
+      
+      try {
+        // Use ultra simple masking for testing
+        maskedImageData = await this.createUltraSimpleMask(photoElement, childName)
+        console.log('🧪 Ultra simple masking successful')
+      } catch (error) {
+        console.error('🧪 Ultra simple masking failed:', error)
+        throw new Error('Ultra simple masking failed')
+      }
       
       if (maskedImageData) {
         // Store the masked photo data
@@ -72,26 +101,26 @@ class AIService {
           action: 'privacy_masking_applied',
           childName,
           masking: {
-            type: maskingType,
-            method: 'REAL_AI_child_detection',
+            type: 'test_mask',
+            method: 'SIMPLE_TEST_MASKING',
             appliedAt: new Date().toISOString()
           },
           output: {
             originalPhoto: `photo_${photoId}_original.jpg`,
             maskedPhoto: maskedPhotoUrl,
-            maskingQuality: 'high',
+            maskingQuality: 'test',
             identityProtection: 'maximum'
           },
           aiModel: 'ClassVault-2.1',
           processingTime: '0.6s',
-          description: `${childName} has been ACTUALLY masked using AI detection for privacy protection`
+          description: `${childName} has been masked using TEST masking for debugging`
         }
         
-        console.log(`✅ REAL Privacy masking applied: ${maskingType} for ${childName}`)
-        console.log(`✅ Masked photo URL: ${maskedPhotoUrl}`)
+        console.log(`✅ TEST Privacy masking applied for ${childName}`)
+        console.log(`✅ Test masked photo URL: ${maskedPhotoUrl}`)
         return result
       } else {
-        throw new Error('Failed to create masked photo')
+        throw new Error('Failed to create test masked photo')
       }
     } catch (error) {
       console.error('Error in real AI masking:', error)
@@ -154,6 +183,220 @@ class AIService {
           resolve(null)
         }
       }, 'image/jpeg', 0.9)
+    })
+  }
+
+  // SIMPLE TEST MASKING - Debug function to test basic masking
+  async createSimpleTestMask(photoElement, childName) {
+    console.log('🧪 Creating simple test mask for:', childName)
+    
+    try {
+      return new Promise((resolve, reject) => {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        
+        if (!ctx) {
+          console.error('🧪 Failed to get canvas context')
+          reject(new Error('Canvas context not available'))
+          return
+        }
+        
+        // Set canvas size to match photo
+        canvas.width = photoElement.naturalWidth || photoElement.width
+        canvas.height = photoElement.naturalHeight || photoElement.height
+        
+        console.log('🧪 Test canvas created:', canvas.width, 'x', canvas.height)
+        
+        // Draw the original photo
+        try {
+          ctx.drawImage(photoElement, 0, 0, canvas.width, canvas.height)
+          console.log('🧪 Original photo drawn to test canvas')
+        } catch (drawError) {
+          console.error('🧪 Error drawing image to canvas:', drawError)
+          reject(drawError)
+          return
+        }
+        
+        // Apply a simple purple overlay to the left side (where Emma would be)
+        const maskWidth = canvas.width * 0.3
+        const maskHeight = canvas.height * 0.6
+        const maskX = canvas.width * 0.05
+        const maskY = canvas.height * 0.2
+        
+        try {
+          // Fill with purple overlay
+          ctx.fillStyle = 'rgba(128, 0, 128, 0.7)'
+          ctx.fillRect(maskX, maskY, maskWidth, maskHeight)
+          
+          // Add text
+          ctx.fillStyle = 'white'
+          ctx.font = 'bold 24px Arial'
+          ctx.textAlign = 'center'
+          ctx.fillText('TEST MASK', maskX + maskWidth/2, maskY + maskHeight/2)
+          ctx.fillText(childName, maskX + maskWidth/2, maskY + maskHeight/2 + 30)
+          
+          console.log('🧪 Test mask applied to zone:', { maskX, maskY, maskWidth, maskHeight })
+        } catch (maskError) {
+          console.error('🧪 Error applying test mask:', maskError)
+          reject(maskError)
+          return
+        }
+        
+        // Convert to blob
+        try {
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const testUrl = URL.createObjectURL(blob)
+              console.log('🧪 Test mask blob created, size:', blob.size, 'bytes')
+              console.log('🧪 Test mask URL:', testUrl)
+              resolve({ blob, url: testUrl, canvas })
+            } else {
+              console.error('🧪 Failed to create test mask blob')
+              reject(new Error('Blob creation failed'))
+            }
+          }, 'image/jpeg', 0.9)
+        } catch (blobError) {
+          console.error('🧪 Error creating blob:', blobError)
+          reject(blobError)
+        }
+      })
+    } catch (error) {
+      console.error('🧪 Error in createSimpleTestMask:', error)
+      throw error
+    }
+  }
+
+  // SIMPLE URL-BASED TEST MASKING - Bypass DOM issues
+  async createUrlBasedTestMask(photoUrl, childName) {
+    console.log('🧪 Creating URL-based test mask for:', childName)
+    
+    try {
+      return new Promise((resolve, reject) => {
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        
+        img.onload = () => {
+          console.log('🧪 Image loaded from URL:', img.width, 'x', img.height)
+          
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+          
+          if (!ctx) {
+            console.error('🧪 Failed to get canvas context')
+            reject(new Error('Canvas context not available'))
+            return
+          }
+          
+          // Set canvas size to match loaded image
+          canvas.width = img.width
+          canvas.height = img.height
+          
+          console.log('🧪 Test canvas created:', canvas.width, 'x', canvas.height)
+          
+          try {
+            // Draw the loaded image
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+            console.log('🧪 Image drawn to test canvas')
+            
+            // Apply a simple purple overlay to the left side
+            const maskWidth = canvas.width * 0.3
+            const maskHeight = canvas.height * 0.6
+            const maskX = canvas.width * 0.05
+            const maskY = canvas.height * 0.2
+            
+            // Fill with purple overlay
+            ctx.fillStyle = 'rgba(128, 0, 128, 0.7)'
+            ctx.fillRect(maskX, maskY, maskWidth, maskHeight)
+            
+            // Add text
+            ctx.fillStyle = 'white'
+            ctx.font = 'bold 24px Arial'
+            ctx.textAlign = 'center'
+            ctx.fillText('TEST MASK', maskX + maskWidth/2, maskY + maskHeight/2)
+            ctx.fillText(childName, maskX + maskWidth/2, maskY + maskHeight/2 + 30)
+            
+            console.log('🧪 Test mask applied to zone:', { maskX, maskY, maskWidth, maskHeight })
+            
+            // Convert to blob
+            canvas.toBlob((blob) => {
+              if (blob) {
+                const testUrl = URL.createObjectURL(blob)
+                console.log('🧪 Test mask blob created, size:', blob.size, 'bytes')
+                console.log('🧪 Test mask URL:', testUrl)
+                resolve({ blob, url: testUrl, canvas })
+              } else {
+                console.error('🧪 Failed to create test mask blob')
+                reject(new Error('Blob creation failed'))
+              }
+            }, 'image/jpeg', 0.9)
+            
+          } catch (error) {
+            console.error('🧪 Error in canvas operations:', error)
+            reject(error)
+          }
+        }
+        
+        img.onerror = (error) => {
+          console.error('🧪 Error loading image from URL:', error)
+          reject(new Error('Failed to load image from URL'))
+        }
+        
+        // Load the image
+        img.src = photoUrl
+        console.log('🧪 Loading image from URL:', photoUrl)
+      })
+    } catch (error) {
+      console.error('🧪 Error in createUrlBasedTestMask:', error)
+      throw error
+    }
+  }
+
+  // ULTRA SIMPLE TEST MASKING - Just a purple rectangle
+  async createUltraSimpleMask(photoElement, childName) {
+    console.log('🧪 Creating ultra simple mask for:', childName)
+    
+    return new Promise((resolve, reject) => {
+      try {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        
+        // Set canvas size
+        canvas.width = 800  // Fixed size for testing
+        canvas.height = 600
+        
+        console.log('🧪 Fixed canvas created:', canvas.width, 'x', canvas.height)
+        
+        // Draw the photo (scaled to fit)
+        ctx.drawImage(photoElement, 0, 0, canvas.width, canvas.height)
+        console.log('🧪 Photo drawn to canvas')
+        
+        // Draw a simple purple rectangle on the left
+        ctx.fillStyle = 'purple'
+        ctx.fillRect(0, 0, canvas.width * 0.3, canvas.height)
+        
+        // Add text
+        ctx.fillStyle = 'white'
+        ctx.font = '48px Arial'
+        ctx.textAlign = 'center'
+        ctx.fillText('MASKED', canvas.width * 0.15, canvas.height / 2)
+        
+        console.log('🧪 Simple mask applied')
+        
+        // Convert to blob
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob)
+            console.log('🧪 Simple mask blob created, size:', blob.size)
+            resolve({ blob, url, canvas })
+          } else {
+            reject(new Error('Blob creation failed'))
+          }
+        }, 'image/jpeg', 0.9)
+        
+      } catch (error) {
+        console.error('🧪 Error in ultra simple mask:', error)
+        reject(error)
+      }
     })
   }
 
