@@ -177,6 +177,8 @@ class DemoPhotoService {
 
   removePhoto(id) {
     console.log('DemoPhotoService: Removing photo:', id)
+    console.log('DemoPhotoService: Current photos before removal:', this.photos.map(p => ({ id: p.id, title: p.title })))
+    console.log('DemoPhotoService: Call stack:', new Error().stack)
     
     const index = this.photos.findIndex(photo => photo.id === id)
     if (index !== -1) {
@@ -191,6 +193,7 @@ class DemoPhotoService {
       this.savePhotosToStorage()
       
       console.log('DemoPhotoService: Photo removed successfully. Total photos:', this.photos.length)
+      console.log('DemoPhotoService: Removed photo details:', { id: removedPhoto.id, title: removedPhoto.title })
       return removedPhoto
     }
     

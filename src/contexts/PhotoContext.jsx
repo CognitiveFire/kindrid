@@ -90,43 +90,33 @@ export const PhotoProvider = ({ children }) => {
         children: photoData.children || [],
         consentGiven: [],
         consentPending: photoData.children || [],
-        status: 'pending_consent', // Changed from 'approved' to 'pending_consent'
+        status: 'pending_consent',
         aiProcessed: false,
         uploadedAt: new Date().toISOString()
       }
       
       console.log('PhotoContext: Created new photo object:', newPhoto)
       
-      // Add to demo service
-      demoPhotoService.addPhoto(newPhoto)
-      console.log('PhotoContext: Added photo to demo service')
+      // Add to demo service FIRST
+      const addedPhoto = demoPhotoService.addPhoto(newPhoto)
+      console.log('PhotoContext: Added photo to demo service:', addedPhoto)
       
-      // Update local state IMMEDIATELY - force re-render
-      setPhotos(prev => {
-        const updated = [...prev, newPhoto]
-        console.log('PhotoContext: Updating photos state, current count:', prev.length)
-        console.log('PhotoContext: New photos state count:', updated.length)
-        return updated
-      })
+      // Verify photo is in demo service
+      const allPhotos = demoPhotoService.getAllPhotos()
+      console.log('PhotoContext: All photos in demo service after add:', allPhotos.length)
+      console.log('PhotoContext: Photo IDs in demo service:', allPhotos.map(p => p.id))
       
-      // Update pending consent state IMMEDIATELY - force re-render
-      setPendingConsent(prev => {
-        const updated = [...prev, newPhoto]
-        console.log('PhotoContext: Updating pending consent, current count:', prev.length)
-        console.log('PhotoContext: New pending consent count:', updated.length)
-        return updated
-      })
+      // Update local state
+      setPhotos(allPhotos)
+      setPendingConsent(allPhotos.filter(p => p.status === 'pending_consent'))
       
-      // Force multiple re-renders to ensure UI updates
+      // Force re-render
       setLastUpdate(Date.now())
-      
-      // Wait a moment for state to settle
-      await new Promise(resolve => setTimeout(resolve, 100))
       
       console.log('PhotoContext: Photo upload completed successfully')
       
       // Return the photo for consent management
-      return newPhoto
+      return addedPhoto
       
     } catch (error) {
       console.error('PhotoContext: Error uploading photo:', error)
