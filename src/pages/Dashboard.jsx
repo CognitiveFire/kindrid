@@ -30,15 +30,18 @@ const Dashboard = () => {
   const [reviewingPhoto, setReviewingPhoto] = useState(null)
   const [processingConsent, setProcessingConsent] = useState(new Set()) // Track which photos are being processed
 
-  // Debug: Monitor changes to reviewingPhoto
+  // Monitor reviewingPhoto changes for debugging
   useEffect(() => {
     if (reviewingPhoto) {
-      console.log('Dashboard: reviewingPhoto state updated:', {
-        id: reviewingPhoto.id,
-        title: reviewingPhoto.title,
-        consentGiven: reviewingPhoto.consentGiven,
-        consentPending: reviewingPhoto.consentPending,
-        status: reviewingPhoto.status
+      console.log('Dashboard: reviewingPhoto state changed:', {
+        id: reviewingPhoto?.id,
+        title: reviewingPhoto?.title,
+        status: reviewingPhoto?.status,
+        consentGiven: reviewingPhoto?.consentGiven,
+        consentPending: reviewingPhoto?.consentPending,
+        children: reviewingPhoto?.children,
+        maskingInfo: reviewingPhoto?.maskingInfo,
+        maskedUrl: reviewingPhoto?.maskedUrl
       })
     }
   }, [reviewingPhoto])
@@ -726,7 +729,7 @@ const Dashboard = () => {
             <div className="p-6">
               {/* Modal Header */}
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Review Photo: {reviewingPhoto.title}</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Review Photo: {reviewingPhoto?.title || 'Untitled'}</h2>
                 <button
                   onClick={() => setReviewingPhoto(null)}
                   className="text-gray-400 hover:text-gray-600"
@@ -738,7 +741,7 @@ const Dashboard = () => {
               {/* Photo Display */}
               <div className="mb-6">
                 {/* Processing Indicator */}
-                {reviewingPhoto.status === 'ai_processing' && (
+                {reviewingPhoto?.status === 'ai_processing' && (
                   <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                     <div className="flex items-center space-x-2 text-purple-700">
                       <Brain className="w-5 h-5 animate-pulse" />
@@ -753,7 +756,7 @@ const Dashboard = () => {
                 <div className="relative">
                   {renderPhotoImage(reviewingPhoto)}
                   <div className="absolute top-2 right-2 bg-white bg-opacity-90 px-2 py-1 rounded text-xs text-gray-600">
-                    {reviewingPhoto.status}
+                    {reviewingPhoto?.status || 'Unknown'}
                   </div>
                 </div>
               </div>
@@ -763,22 +766,22 @@ const Dashboard = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Photo Information</h3>
                   <div className="space-y-2 text-sm">
-                    <p><span className="font-medium">Title:</span> {reviewingPhoto.title}</p>
-                    <p><span className="font-medium">Description:</span> {reviewingPhoto.description || 'No description'}</p>
-                    <p><span className="font-medium">Location:</span> {reviewingPhoto.location || 'No location'}</p>
-                    <p><span className="font-medium">Teacher:</span> {reviewingPhoto.teacher}</p>
-                    <p><span className="font-medium">Date:</span> {reviewingPhoto.date}</p>
+                    <p><span className="font-medium">Title:</span> {reviewingPhoto?.title || 'No title'}</p>
+                    <p><span className="font-medium">Description:</span> {reviewingPhoto?.description || 'No description'}</p>
+                    <p><span className="font-medium">Location:</span> {reviewingPhoto?.location || 'No location'}</p>
+                    <p><span className="font-medium">Teacher:</span> {reviewingPhoto?.teacher || 'Unknown'}</p>
+                    <p><span className="font-medium">Date:</span> {reviewingPhoto?.date || 'Unknown'}</p>
                   </div>
                 </div>
                 
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Children in Photo</h3>
                   <div className="space-y-2">
-                    {reviewingPhoto.children.map((child) => {
-                      const hasConsent = reviewingPhoto.consentGiven.includes(child)
-                      const isPending = reviewingPhoto.consentPending.includes(child)
+                    {(reviewingPhoto?.children || []).map((child) => {
+                      const hasConsent = (reviewingPhoto?.consentGiven || []).includes(child)
+                      const isPending = (reviewingPhoto?.consentPending || []).includes(child)
                       const isDenied = !hasConsent && !isPending // If not approved and not pending, they're denied
-                      const isMasked = reviewingPhoto.maskingInfo?.maskedChildren?.includes(child)
+                      const isMasked = (reviewingPhoto?.maskingInfo?.maskedChildren || []).includes(child)
                       
                       return (
                         <div key={child} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
@@ -864,15 +867,23 @@ const Dashboard = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Current Consent Status</h3>
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold text-green-600">{reviewingPhoto.consentGiven.length}</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {(reviewingPhoto?.consentGiven || []).length || 0}
+                    </div>
                     <div className="text-sm text-gray-600">Approved</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-yellow-600">{reviewingPhoto.consentPending.length}</div>
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {(reviewingPhoto?.consentPending || []).length || 0}
+                    </div>
                     <div className="text-sm text-gray-600">Pending</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-red-600">{reviewingPhoto.children.length - reviewingPhoto.consentGiven.length - reviewingPhoto.consentPending.length}</div>
+                    <div className="text-2xl font-bold text-red-600">
+                      {(reviewingPhoto?.children || []).length - 
+                       (reviewingPhoto?.consentGiven || []).length - 
+                       (reviewingPhoto?.consentPending || []).length}
+                    </div>
                     <div className="text-sm text-gray-600">Denied</div>
                   </div>
                 </div>
@@ -882,9 +893,9 @@ const Dashboard = () => {
               <div className="mb-6 p-4 bg-blue-50 rounded-lg">
                 <h3 className="text-lg font-semibold text-blue-900 mb-3">Photo Status & AI Processing</h3>
                 <div className="space-y-2 text-sm text-blue-800">
-                  <p><span className="font-medium">Current Status:</span> {getStatusText(reviewingPhoto.status)}</p>
-                  <p><span className="font-medium">AI Processed:</span> {reviewingPhoto.aiProcessed ? 'Yes' : 'No'}</p>
-                  {reviewingPhoto.status === 'ai_processing' && (
+                  <p><span className="font-medium">Current Status:</span> {getStatusText(reviewingPhoto?.status)}</p>
+                  <p><span className="font-medium">AI Processed:</span> {reviewingPhoto?.aiProcessed ? 'Yes' : 'No'}</p>
+                  {reviewingPhoto?.status === 'ai_processing' && (
                     <div className="flex items-center space-x-2 text-purple-600">
                       <Brain className="w-4 h-4" />
                       <span>AI is processing this photo...</span>
@@ -914,9 +925,9 @@ const Dashboard = () => {
               </div>
 
               {/* Masking Options for Denied Consent */}
-              {reviewingPhoto.children.some(child => 
-                !reviewingPhoto.consentGiven.includes(child) && 
-                !reviewingPhoto.consentPending.includes(child)
+              {(reviewingPhoto?.children || []).some(child => 
+                !(reviewingPhoto?.consentGiven || []).includes(child) && 
+                !(reviewingPhoto?.consentPending || []).includes(child)
               ) && (
                 <div className="mb-6 p-4 bg-purple-50 rounded-lg">
                   <h3 className="text-lg font-semibold text-purple-900 mb-3">AI Identity Masking Applied</h3>
