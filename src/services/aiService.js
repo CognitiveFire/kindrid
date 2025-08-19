@@ -186,79 +186,60 @@ class AIService {
     })
   }
 
-  // SIMPLE TEST MASKING - Debug function to test basic masking
+  // SIMPLE TEST MASKING - Fallback for debugging
   async createSimpleTestMask(photoElement, childName) {
     console.log('🧪 Creating simple test mask for:', childName)
     
     try {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      
+      if (!ctx) {
+        throw new Error('Failed to get canvas context')
+      }
+      
+      // Set canvas dimensions
+      const width = photoElement.naturalWidth || photoElement.width || 800
+      const height = photoElement.naturalHeight || photoElement.height || 600
+      
+      canvas.width = width
+      canvas.height = height
+      
+      console.log('🧪 Canvas created:', { width, height })
+      
+      // Draw the original photo
+      ctx.drawImage(photoElement, 0, 0, width, height)
+      console.log('🧪 Photo drawn to canvas')
+      
+      // Apply a simple purple overlay to the left side (where Emma would be)
+      const maskWidth = width * 0.3
+      const maskHeight = height * 0.6
+      const maskX = width * 0.05
+      const maskY = height * 0.2
+      
+      // Fill with purple overlay
+      ctx.fillStyle = 'rgba(128, 0, 128, 0.7)'
+      ctx.fillRect(maskX, maskY, maskWidth, maskHeight)
+      
+      // Add text
+      ctx.fillStyle = 'white'
+      ctx.font = 'bold 24px Arial'
+      ctx.textAlign = 'center'
+      ctx.fillText('TEST MASK', maskX + maskWidth/2, maskY + maskHeight/2)
+      ctx.fillText(childName, maskX + maskWidth/2, maskY + maskHeight/2 + 30)
+      
+      console.log('🧪 Test mask applied')
+      
       return new Promise((resolve, reject) => {
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-        
-        if (!ctx) {
-          console.error('🧪 Failed to get canvas context')
-          reject(new Error('Canvas context not available'))
-          return
-        }
-        
-        // Set canvas size to match photo
-        canvas.width = photoElement.naturalWidth || photoElement.width
-        canvas.height = photoElement.naturalHeight || photoElement.height
-        
-        console.log('🧪 Test canvas created:', canvas.width, 'x', canvas.height)
-        
-        // Draw the original photo
-        try {
-          ctx.drawImage(photoElement, 0, 0, canvas.width, canvas.height)
-          console.log('🧪 Original photo drawn to test canvas')
-        } catch (drawError) {
-          console.error('🧪 Error drawing image to canvas:', drawError)
-          reject(drawError)
-          return
-        }
-        
-        // Apply a simple purple overlay to the left side (where Emma would be)
-        const maskWidth = canvas.width * 0.3
-        const maskHeight = canvas.height * 0.6
-        const maskX = canvas.width * 0.05
-        const maskY = canvas.height * 0.2
-        
-        try {
-          // Fill with purple overlay
-          ctx.fillStyle = 'rgba(128, 0, 128, 0.7)'
-          ctx.fillRect(maskX, maskY, maskWidth, maskHeight)
-          
-          // Add text
-          ctx.fillStyle = 'white'
-          ctx.font = 'bold 24px Arial'
-          ctx.textAlign = 'center'
-          ctx.fillText('TEST MASK', maskX + maskWidth/2, maskY + maskHeight/2)
-          ctx.fillText(childName, maskX + maskWidth/2, maskY + maskHeight/2 + 30)
-          
-          console.log('🧪 Test mask applied to zone:', { maskX, maskY, maskWidth, maskHeight })
-        } catch (maskError) {
-          console.error('🧪 Error applying test mask:', maskError)
-          reject(maskError)
-          return
-        }
-        
-        // Convert to blob
-        try {
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const testUrl = URL.createObjectURL(blob)
-              console.log('🧪 Test mask blob created, size:', blob.size, 'bytes')
-              console.log('🧪 Test mask URL:', testUrl)
-              resolve({ blob, url: testUrl, canvas })
-            } else {
-              console.error('🧪 Failed to create test mask blob')
-              reject(new Error('Blob creation failed'))
-            }
-          }, 'image/jpeg', 0.9)
-        } catch (blobError) {
-          console.error('🧪 Error creating blob:', blobError)
-          reject(blobError)
-        }
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob)
+            console.log('🧪 Test mask blob created, size:', blob.size)
+            resolve({ blob, url, canvas })
+          } else {
+            reject(new Error('Blob creation failed'))
+          }
+        }, 'image/jpeg', 0.9)
       })
     } catch (error) {
       console.error('🧪 Error in createSimpleTestMask:', error)
@@ -354,31 +335,64 @@ class AIService {
   // REAL AI MASKING - Seamless Emma removal with background reconstruction
   async createUltraSimpleMask(photoElement, childName) {
     console.log('🎭 Starting AI masking process for:', childName)
+    console.log('🎭 Photo element received:', {
+      element: photoElement,
+      type: photoElement.constructor.name,
+      src: photoElement.src,
+      width: photoElement.width,
+      height: photoElement.height,
+      naturalWidth: photoElement.naturalWidth,
+      naturalHeight: photoElement.naturalHeight
+    })
+    
     try {
+      console.log('🎭 Creating canvas...')
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
-      canvas.width = photoElement.naturalWidth || photoElement.width || 800
-      canvas.height = photoElement.naturalHeight || photoElement.height || 600
+      
+      if (!ctx) {
+        throw new Error('Failed to get canvas context')
+      }
+      
+      console.log('🎭 Canvas created successfully')
+      
+      // Set canvas dimensions
+      const width = photoElement.naturalWidth || photoElement.width || 800
+      const height = photoElement.naturalHeight || photoElement.height || 600
+      
+      canvas.width = width
+      canvas.height = height
+      
+      console.log('🎭 Canvas dimensions set:', { width, height })
       
       // Draw the original photo
-      ctx.drawImage(photoElement, 0, 0, canvas.width, canvas.height)
+      console.log('🎭 Drawing photo to canvas...')
+      ctx.drawImage(photoElement, 0, 0, width, height)
+      console.log('🎭 Photo drawn to canvas successfully')
       
       // Check if this is Emma - if so, apply seamless removal
       if (childName.toLowerCase().includes('emma') || childName.toLowerCase().includes('e')) {
         console.log('🎭 Emma detected - applying seamless removal')
-        await this.applySeamlessEmmaRemoval(ctx, canvas.width, canvas.height)
+        await this.applySeamlessEmmaRemoval(ctx, width, height)
+        console.log('🎭 Emma removal completed')
       } else {
         console.log('🎭 Other child detected - applying standard masking')
-        await this.applyStandardChildMasking(ctx, canvas.width, canvas.height, childName)
+        await this.applyStandardChildMasking(ctx, width, height, childName)
+        console.log('🎭 Standard masking completed')
       }
+      
+      console.log('🎭 AI masking completed, converting to blob...')
       
       return new Promise((resolve, reject) => {
         canvas.toBlob((blob) => {
           if (blob) {
+            console.log('🎭 Blob created successfully, size:', blob.size)
             const url = URL.createObjectURL(blob)
+            console.log('🎭 URL created:', url)
             console.log('🎭 AI masking completed successfully')
             resolve({ blob, url, canvas })
           } else {
+            console.error('🎭 Blob creation failed')
             reject(new Error('Blob creation failed'))
           }
         }, 'image/jpeg', 0.9)

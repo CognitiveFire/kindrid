@@ -666,6 +666,12 @@ export const PhotoProvider = ({ children }) => {
       return null
     }
     
+    console.log('PhotoContext: Current photo found:', {
+      id: currentPhoto.id,
+      url: currentPhoto.url,
+      title: currentPhoto.title
+    })
+    
     try {
       // Update consent status in the photo
       const updatedPhoto = {
@@ -676,42 +682,56 @@ export const PhotoProvider = ({ children }) => {
         aiProcessed: false // Will be set to true after AI processing
       }
       
+      console.log('PhotoContext: Updated photo object created')
+      
       // If there are children without consent, apply AI masking
       if (childrenWithoutConsent.length > 0) {
-        console.log('PhotoContext: Applying AI masking for children without consent')
+        console.log('PhotoContext: Applying AI masking for children without consent:', childrenWithoutConsent)
         
         // Create a new Image object from the photo URL for AI processing
+        console.log('PhotoContext: Creating new Image object...')
         const photoImage = new Image()
         photoImage.crossOrigin = 'anonymous'
         
-        // Wait for the image to load
-        await new Promise((resolve, reject) => {
-          photoImage.onload = resolve
-          photoImage.onerror = reject
-          
-          // Add timeout to prevent infinite waiting
-          const timeout = setTimeout(() => {
-            reject(new Error('Image loading timeout'))
-          }, 10000) // 10 second timeout
-          
-          photoImage.onload = () => {
-            clearTimeout(timeout)
-            resolve()
-          }
-          
-          photoImage.onerror = () => {
-            clearTimeout(timeout)
-            reject(new Error('Failed to load image'))
-          }
-          
-          photoImage.src = currentPhoto.url
-        })
+        console.log('PhotoContext: Image object created, starting to load...')
         
-        console.log('PhotoContext: Photo image loaded for AI processing:', {
-          width: photoImage.width,
-          height: photoImage.height,
-          src: photoImage.src
-        })
+        // Wait for the image to load
+        try {
+          await new Promise((resolve, reject) => {
+            photoImage.onload = resolve
+            photoImage.onerror = reject
+            
+            // Add timeout to prevent infinite waiting
+            const timeout = setTimeout(() => {
+              console.error('PhotoContext: Image loading timeout after 10 seconds')
+              reject(new Error('Image loading timeout'))
+            }, 10000) // 10 second timeout
+            
+            photoImage.onload = () => {
+              console.log('PhotoContext: Image loaded successfully')
+              clearTimeout(timeout)
+              resolve()
+            }
+            
+            photoImage.onerror = () => {
+              console.error('PhotoContext: Image failed to load')
+              clearTimeout(timeout)
+              reject(new Error('Failed to load image'))
+            }
+            
+            console.log('PhotoContext: Setting image src to:', currentPhoto.url)
+            photoImage.src = currentPhoto.url
+          })
+          
+          console.log('PhotoContext: Photo image loaded for AI processing:', {
+            width: photoImage.width,
+            height: photoImage.height,
+            src: photoImage.src
+          })
+        } catch (imageError) {
+          console.error('PhotoContext: Image loading failed:', imageError)
+          throw imageError
+        }
         
         // Process each child without consent
         let finalMaskedPhoto = null
@@ -720,22 +740,30 @@ export const PhotoProvider = ({ children }) => {
           console.log('PhotoContext: Processing AI masking for:', childName)
           
           try {
-            const maskingResult = await aiService.createUltraSimpleMask(photoImage, childName)
+            console.log('PhotoContext: Calling aiService.createUltraSimpleMask...')
+            // TEMPORARILY USE SIMPLE TEST MASK FOR DEBUGGING
+            const maskingResult = await aiService.createSimpleTestMask(photoImage, childName)
+            console.log('PhotoContext: AI masking result received:', maskingResult)
             
             if (maskingResult && maskingResult.blob) {
+              console.log('PhotoContext: Masking result has blob, storing masked photo...')
               // Store the masked photo
               const maskedPhotoUrl = await storeMaskedPhoto(photoId, childName, maskingResult)
               finalMaskedPhoto = maskedPhotoUrl
               
               console.log('PhotoContext: AI masking completed for:', childName)
+            } else {
+              console.error('PhotoContext: Masking result missing blob:', maskingResult)
             }
           } catch (error) {
             console.error('PhotoContext: AI masking failed for:', childName, error)
+            throw error
           }
         }
         
         // Update the photo with final masking info
         if (finalMaskedPhoto) {
+          console.log('PhotoContext: Updating photo with masking info...')
           updatedPhoto.maskedUrl = finalMaskedPhoto
           updatedPhoto.aiProcessed = true
           updatedPhoto.maskingInfo = {
@@ -745,8 +773,15 @@ export const PhotoProvider = ({ children }) => {
             appliedAt: new Date().toISOString()
           }
           updatedPhoto.lastMaskingApplied = new Date().toISOString()
+          console.log('PhotoContext: Photo updated with masking info')
+        } else {
+          console.error('PhotoContext: No final masked photo created')
         }
+      } else {
+        console.log('PhotoContext: No children without consent, skipping AI masking')
       }
+      
+      console.log('PhotoContext: Updating local state...')
       
       // Update local state
       setPhotos(prev => {
@@ -762,7 +797,7 @@ export const PhotoProvider = ({ children }) => {
         )
       )
       
-      console.log('PhotoContext: Final consent processing completed')
+      console.log('PhotoContext: Final consent processing completed successfully')
       return updatedPhoto
       
     } catch (error) {
