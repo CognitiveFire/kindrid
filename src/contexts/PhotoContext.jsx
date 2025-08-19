@@ -214,26 +214,53 @@ export const PhotoProvider = ({ children }) => {
     const newConsentPending = currentPhoto.consentPending.filter(child => child !== childName)
 
     // Update consent status
-    demoPhotoService.updatePhotoConsent(photoId, childName, 'give')
+    demoPhotoService.updatePhotoConsent(photoId, childName, 'approve')
     
-    // Create the updated photo object - preserve existing masking info
+    // Create the updated photo object
     const updatedPhoto = {
       ...currentPhoto,
       consentGiven: newConsentGiven,
       consentPending: newConsentPending,
       currentDisplayUrl: currentPhoto.url,
-      status: 'approved',
-      // Keep existing masking info - don't modify it when giving consent
-      maskingInfo: currentPhoto.maskingInfo || null
+      status: 'approved'
     }
     
-    // Update local state - keep image visible
+    // If this child was previously masked, remove them from the masked list
+    if (currentPhoto.maskingInfo?.maskedChildren?.includes(childName)) {
+      console.log('PhotoContext: Removing child from masked list:', childName)
+      const newMaskedChildren = currentPhoto.maskingInfo.maskedChildren.filter(child => child !== childName)
+      
+      updatedPhoto.maskingInfo = {
+        ...currentPhoto.maskingInfo,
+        action: 'consent_given',
+        childName,
+        technique: 'consent_restoration',
+        appliedAt: new Date().toISOString(),
+        maskedChildren: newMaskedChildren
+      }
+      
+      // If no more masked children, remove the masked URL
+      if (newMaskedChildren.length === 0) {
+        updatedPhoto.maskedUrl = null
+        updatedPhoto.aiProcessed = false
+        updatedPhoto.lastMaskingApplied = null
+      }
+      
+      console.log('PhotoContext: Updated masking info after consent:', {
+        maskedChildren: newMaskedChildren,
+        count: newMaskedChildren.length,
+        action: 'removed_from_masked',
+        maskedUrl: updatedPhoto.maskedUrl
+      })
+    }
+    
+    // Update local state
     setPhotos(prev => {
       const updated = prev.map(photo =>
         photo.id === photoId ? updatedPhoto : photo
       )
       
-      console.log('PhotoContext: Updated photos state with new consent')
+      console.log('PhotoContext: Updated photos state with given consent')
       return updated
     })
     
@@ -243,10 +270,10 @@ export const PhotoProvider = ({ children }) => {
       )
     )
 
-    // IMPORTANT: When giving consent, we DON'T trigger AI masking
-    // AI masking only happens when consent is REVOKED/DENIED
-    console.log('PhotoContext: Consent given successfully - no AI masking needed')
+    console.log('PhotoContext: Consent given successfully')
     console.log('PhotoContext: Final photo state should have URL:', currentPhoto.url)
+    console.log('PhotoContext: Final masking count:', updatedPhoto.maskingInfo?.maskedChildren?.length || 0)
+    console.log('PhotoContext: Final masked URL:', updatedPhoto.maskedUrl)
     
     // Return the updated photo so Dashboard can use it immediately
     return updatedPhoto
@@ -315,63 +342,189 @@ export const PhotoProvider = ({ children }) => {
     // TRIGGER AI MASKING for the revoked child
     try {
       console.log('PhotoContext: Triggering AI masking for revoked child:', childName)
+      
+      // Check if this child is already masked to prevent duplicates
+      const existingMaskedChildren = updatedPhoto.maskingInfo?.maskedChildren || []
+      if (existingMaskedChildren.includes(childName)) {
+        console.log('PhotoContext: Child already masked, skipping duplicate:', childName)
+        console.log('PhotoContext: Current masked children:', existingMaskedChildren)
+        return updatedPhoto
+      }
+      
       const maskingResult = await aiService.applyPrivacyMasking(photoId, childName, 'ai_removal')
       
       if (maskingResult.success) {
         console.log('PhotoContext: AI masking completed successfully for:', childName)
         console.log('PhotoContext: Masking result:', maskingResult)
         
-        // Use the updatedPhoto directly to avoid race conditions
-        // Don't search the photos array again
-        const existingMaskedChildren = updatedPhoto.maskingInfo?.maskedChildren || []
+        // Create new masking info - add to existing masked children
+        const newMaskedChildren = [...existingMaskedChildren, childName]
         
-        // Check if this child is already masked to prevent duplicates
-        if (existingMaskedChildren.includes(childName)) {
-          console.log('PhotoContext: Child already masked, skipping duplicate:', childName)
-        } else {
-          // Create new masking info - add to existing masked children
-          const newMaskedChildren = [...existingMaskedChildren, childName]
-          
-          // Update the photo with masking info and the actual masked photo URL
-          const maskedPhoto = {
-            ...updatedPhoto,
-            maskingInfo: {
-              action: 'consent_revoked',
-              childName,
-              technique: 'ai_removal',
-              appliedAt: new Date().toISOString(),
-              maskedChildren: newMaskedChildren
-            },
-            // Store the actual masked photo URL for display
-            maskedUrl: maskingResult.output.maskedPhoto,
-            aiProcessed: true,
-            lastMaskingApplied: new Date().toISOString()
-          }
-          
-          setPhotos(prev =>
-            prev.map(photo =>
-              photo.id === photoId ? maskedPhoto : photo
-            )
-          )
-          
-          // Update the updatedPhoto reference for return
-          Object.assign(updatedPhoto, maskedPhoto)
-          
-          console.log('PhotoContext: Updated masking info:', {
-            maskedChildren: newMaskedChildren,
-            count: newMaskedChildren.length,
-            action: 'added_new_masking',
-            maskedUrl: maskingResult.output.maskedPhoto
-          })
+        // Update the photo with masking info and the actual masked photo URL
+        const maskedPhoto = {
+          ...updatedPhoto,
+          maskingInfo: {
+            action: 'consent_revoked',
+            childName,
+            technique: 'ai_removal',
+            appliedAt: new Date().toISOString(),
+            maskedChildren: newMaskedChildren
+          },
+          // Store the actual masked photo URL for display
+          maskedUrl: maskingResult.output.maskedPhoto,
+          aiProcessed: true,
+          lastMaskingApplied: new Date().toISOString()
         }
+        
+        setPhotos(prev =>
+          prev.map(photo =>
+            photo.id === photoId ? maskedPhoto : photo
+          )
+        )
+        
+        // Update the updatedPhoto reference for return
+        Object.assign(updatedPhoto, maskedPhoto)
+        
+        console.log('PhotoContext: Updated masking info:', {
+          maskedChildren: newMaskedChildren,
+          count: newMaskedChildren.length,
+          action: 'added_new_masking',
+          maskedUrl: maskingResult.output.maskedPhoto
+        })
       } else {
-        console.error('PhotoContext: AI masking failed for:', childName)
+        console.error('PhotoContext: AI masking failed for:', childName, maskingResult.error)
       }
     } catch (error) {
       console.error('PhotoContext: AI masking error for:', childName, error)
     }
 
     console.log('PhotoContext: Consent revoked successfully - image remains visible')
+    console.log('PhotoContext: Final photo state should have URL:', currentPhoto.url)
+    console.log('PhotoContext: Final masking count:', updatedPhoto.maskingInfo?.maskedChildren?.length || 0)
+    console.log('PhotoContext: Final masked URL:', updatedPhoto.maskedUrl)
+    
+    // Return the updated photo so Dashboard can use it immediately
+    return updatedPhoto
+  }
+
+  const denyConsent = async (photoId, childName) => {
+    if (!canManageConsent(photos.find(p => p.id === photoId))) {
+      console.error('User cannot manage consent for this photo')
+      return null
+    }
+
+    console.log('PhotoContext: DENYING CONSENT - Starting process...')
+    console.log('PhotoContext: Photo ID:', photoId)
+    console.log('PhotoContext: Child Name:', childName)
+    
+    // Get the current photo before any changes
+    const currentPhoto = photos.find(p => p.id === photoId)
+    if (!currentPhoto) {
+      console.error('PhotoContext: Photo not found for consent operation')
+      return null
+    }
+    
+    console.log('PhotoContext: Current photo before consent change:', {
+      id: currentPhoto.id,
+      url: currentPhoto.url,
+      currentDisplayUrl: currentPhoto.currentDisplayUrl,
+      consentGiven: currentPhoto.consentGiven,
+      consentPending: currentPhoto.consentPending,
+      maskingInfo: currentPhoto.maskingInfo
+    })
+
+    // Calculate new consent values - remove from both lists
+    const newConsentGiven = currentPhoto.consentGiven.filter(child => child !== childName)
+    const newConsentPending = currentPhoto.consentPending.filter(child => child !== childName)
+
+    // Update consent status
+    demoPhotoService.updatePhotoConsent(photoId, childName, 'deny')
+    
+    // Create the updated photo object
+    const updatedPhoto = {
+      ...currentPhoto,
+      consentGiven: newConsentGiven,
+      consentPending: newConsentPending,
+      currentDisplayUrl: currentPhoto.url,
+      status: 'denied'
+    }
+    
+    // Update local state
+    setPhotos(prev => {
+      const updated = prev.map(photo =>
+        photo.id === photoId ? updatedPhoto : photo
+      )
+      
+      console.log('PhotoContext: Updated photos state with denied consent')
+      return updated
+    })
+    
+    setPendingConsent(prev =>
+      prev.map(photo =>
+        photo.id === photoId ? updatedPhoto : photo
+      )
+    )
+
+    // TRIGGER AI MASKING for the denied child
+    try {
+      console.log('PhotoContext: Triggering AI masking for denied child:', childName)
+      
+      // Check if this child is already masked to prevent duplicates
+      const existingMaskedChildren = updatedPhoto.maskingInfo?.maskedChildren || []
+      if (existingMaskedChildren.includes(childName)) {
+        console.log('PhotoContext: Child already masked, skipping duplicate:', childName)
+        console.log('PhotoContext: Current masked children:', existingMaskedChildren)
+        return updatedPhoto
+      }
+      
+      const maskingResult = await aiService.applyPrivacyMasking(photoId, childName, 'ai_removal')
+      
+      if (maskingResult.success) {
+        console.log('PhotoContext: AI masking completed successfully for:', childName)
+        console.log('PhotoContext: Masking result:', maskingResult)
+        
+        // Create new masking info - add to existing masked children
+        const newMaskedChildren = [...existingMaskedChildren, childName]
+        
+        // Update the photo with masking info and the actual masked photo URL
+        const maskedPhoto = {
+          ...updatedPhoto,
+          maskingInfo: {
+            action: 'consent_denied',
+            childName,
+            technique: 'ai_removal',
+            appliedAt: new Date().toISOString(),
+            maskedChildren: newMaskedChildren
+          },
+          // Store the actual masked photo URL for display
+          maskedUrl: maskingResult.output.maskedPhoto,
+          aiProcessed: true,
+          lastMaskingApplied: new Date().toISOString()
+        }
+        
+        setPhotos(prev =>
+          prev.map(photo =>
+            photo.id === photoId ? maskedPhoto : photo
+          )
+        )
+        
+        // Update the updatedPhoto reference for return
+        Object.assign(updatedPhoto, maskedPhoto)
+        
+        console.log('PhotoContext: Updated masking info:', {
+          maskedChildren: newMaskedChildren,
+          count: newMaskedChildren.length,
+          action: 'added_new_masking',
+          maskedUrl: maskingResult.output.maskedPhoto
+        })
+      } else {
+        console.error('PhotoContext: AI masking failed for:', childName, maskingResult.error)
+      }
+    } catch (error) {
+      console.error('PhotoContext: AI masking error for:', childName, error)
+    }
+
+    console.log('PhotoContext: Consent denied successfully')
     console.log('PhotoContext: Final photo state should have URL:', currentPhoto.url)
     console.log('PhotoContext: Final masking count:', updatedPhoto.maskingInfo?.maskedChildren?.length || 0)
     console.log('PhotoContext: Final masked URL:', updatedPhoto.maskedUrl)
@@ -647,6 +800,7 @@ export const PhotoProvider = ({ children }) => {
     uploadPhoto,
     giveConsent,
     revokeConsent,
+    denyConsent,
     deletePhoto,
     updatePhoto,
     getPhotosByStatus,

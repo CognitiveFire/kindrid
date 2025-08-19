@@ -21,7 +21,8 @@ const Dashboard = () => {
     switchUserRole,
     revokeConsent,
     deletePhoto,
-    updatePhoto
+    updatePhoto,
+    denyConsent
   } = usePhotos()
   const [showPhotoUpload, setShowPhotoUpload] = useState(false)
   const [editingPhoto, setEditingPhoto] = useState(null)
@@ -130,76 +131,63 @@ const Dashboard = () => {
     }
   }
 
-  const handleGiveConsent = async (photoId, childName) => {
+  const handleGiveConsent = async (childName) => {
+    if (!reviewingPhoto) return
+    
+    setProcessingConsent(prev => ({ ...prev, [childName]: true }))
+    
     try {
-      // Set loading state
-      setProcessingConsent(prev => new Set([...prev, `${photoId}-${childName}`]))
+      console.log('Dashboard: Giving consent for:', childName)
+      const updatedPhoto = await giveConsent(reviewingPhoto.id, childName)
       
-      const updatedPhoto = await giveConsent(photoId, childName)
       if (updatedPhoto) {
-        console.log('Dashboard: Got updated photo from giveConsent:', updatedPhoto)
+        console.log('Dashboard: Consent given successfully, updating reviewing photo')
         setReviewingPhoto(updatedPhoto)
-      } else {
-        console.error('Dashboard: No updated photo returned from giveConsent')
       }
     } catch (error) {
-      console.error('Error giving consent:', error)
+      console.error('Dashboard: Error giving consent:', error)
     } finally {
-      // Clear loading state
-      setProcessingConsent(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(`${photoId}-${childName}`)
-        return newSet
-      })
+      setProcessingConsent(prev => ({ ...prev, [childName]: false }))
     }
   }
 
-  const handleDenyConsent = async (photoId, childName) => {
+  const handleDenyConsent = async (childName) => {
+    if (!reviewingPhoto) return
+    
+    setProcessingConsent(prev => ({ ...prev, [childName]: true }))
+    
     try {
-      // Set loading state
-      setProcessingConsent(prev => new Set([...prev, `${photoId}-${childName}`]))
+      console.log('Dashboard: Denying consent for:', childName)
+      const updatedPhoto = await denyConsent(reviewingPhoto.id, childName)
       
-      // This will trigger AI masking for the denied child
-      const updatedPhoto = await revokeConsent(photoId, childName)
       if (updatedPhoto) {
-        console.log('Dashboard: Got updated photo from deny consent:', updatedPhoto)
+        console.log('Dashboard: Consent denied successfully, updating reviewing photo')
         setReviewingPhoto(updatedPhoto)
-      } else {
-        console.error('Dashboard: No updated photo returned from deny consent')
       }
     } catch (error) {
-      console.error('Error denying consent:', error)
+      console.error('Dashboard: Error denying consent:', error)
     } finally {
-      // Clear loading state
-      setProcessingConsent(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(`${photoId}-${childName}`)
-        return newSet
-      })
+      setProcessingConsent(prev => ({ ...prev, [childName]: false }))
     }
   }
 
-  const handleRevokeConsent = async (photoId, childName) => {
+  const handleRevokeConsent = async (childName) => {
+    if (!reviewingPhoto) return
+    
+    setProcessingConsent(prev => ({ ...prev, [childName]: true }))
+    
     try {
-      // Set loading state
-      setProcessingConsent(prev => new Set([...prev, `${photoId}-${childName}`]))
+      console.log('Dashboard: Revoking consent for:', childName)
+      const updatedPhoto = await revokeConsent(reviewingPhoto.id, childName)
       
-      const updatedPhoto = await revokeConsent(photoId, childName)
       if (updatedPhoto) {
-        console.log('Dashboard: Got updated photo from revoke consent:', updatedPhoto)
+        console.log('Dashboard: Consent revoked successfully, updating reviewing photo')
         setReviewingPhoto(updatedPhoto)
-      } else {
-        console.error('Dashboard: No updated photo returned from revoke consent')
       }
     } catch (error) {
-      console.error('Error revoking consent:', error)
+      console.error('Dashboard: Error revoking consent:', error)
     } finally {
-      // Clear loading state
-      setProcessingConsent(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(`${photoId}-${childName}`)
-        return newSet
-      })
+      setProcessingConsent(prev => ({ ...prev, [childName]: false }))
     }
   }
 
@@ -809,40 +797,40 @@ const Dashboard = () => {
                                   ✅ Approved
                                 </span>
                                 <button
-                                  onClick={() => handleRevokeConsent(reviewingPhoto.id, child)}
-                                  disabled={processingConsent.has(`${reviewingPhoto.id}-${child}`)}
+                                  onClick={() => handleRevokeConsent(child)}
+                                  disabled={processingConsent[child]}
                                   className={`px-2 py-1 text-xs rounded transition-colors ${
-                                    processingConsent.has(`${reviewingPhoto.id}-${child}`)
+                                    processingConsent[child]
                                       ? 'bg-gray-400 text-white cursor-not-allowed'
                                       : 'bg-yellow-600 text-white hover:bg-yellow-700'
                                   }`}
                                 >
-                                  {processingConsent.has(`${reviewingPhoto.id}-${child}`) ? 'Processing...' : 'Revoke'}
+                                  {processingConsent[child] ? 'Processing...' : 'Revoke'}
                                 </button>
                               </div>
                             ) : isPending ? (
                               <div className="flex space-x-2">
                                 <button
-                                  onClick={() => handleGiveConsent(reviewingPhoto.id, child)}
-                                  disabled={processingConsent.has(`${reviewingPhoto.id}-${child}`)}
+                                  onClick={() => handleGiveConsent(child)}
+                                  disabled={processingConsent[child]}
                                   className={`px-3 py-1 text-xs rounded transition-colors ${
-                                    processingConsent.has(`${reviewingPhoto.id}-${child}`)
+                                    processingConsent[child]
                                       ? 'bg-gray-400 text-white cursor-not-allowed'
                                       : 'bg-green-600 text-white hover:bg-green-700'
                                   }`}
                                 >
-                                  {processingConsent.has(`${reviewingPhoto.id}-${child}`) ? 'Processing...' : 'Approve'}
+                                  {processingConsent[child] ? 'Processing...' : 'Approve'}
                                 </button>
                                 <button
-                                  onClick={() => handleDenyConsent(reviewingPhoto.id, child)}
-                                  disabled={processingConsent.has(`${reviewingPhoto.id}-${child}`)}
+                                  onClick={() => handleDenyConsent(child)}
+                                  disabled={processingConsent[child]}
                                   className={`px-3 py-1 text-xs rounded transition-colors ${
-                                    processingConsent.has(`${reviewingPhoto.id}-${child}`)
+                                    processingConsent[child]
                                       ? 'bg-gray-400 text-white cursor-not-allowed'
                                       : 'bg-red-600 text-white hover:bg-red-700'
                                   }`}
                                 >
-                                  {processingConsent.has(`${reviewingPhoto.id}-${child}`) ? 'Processing...' : 'Deny'}
+                                  {processingConsent[child] ? 'Processing...' : 'Deny'}
                                 </button>
                               </div>
                             ) : isDenied ? (
@@ -851,15 +839,15 @@ const Dashboard = () => {
                                   ❌ Denied
                                 </span>
                                 <button
-                                  onClick={() => handleGiveConsent(reviewingPhoto.id, child)}
-                                  disabled={processingConsent.has(`${reviewingPhoto.id}-${child}`)}
+                                  onClick={() => handleGiveConsent(child)}
+                                  disabled={processingConsent[child]}
                                   className={`px-3 py-1 text-xs rounded transition-colors ${
-                                    processingConsent.has(`${reviewingPhoto.id}-${child}`)
+                                    processingConsent[child]
                                       ? 'bg-gray-400 text-white cursor-not-allowed'
                                       : 'bg-green-600 text-white hover:bg-green-700'
                                   }`}
                                 >
-                                  {processingConsent.has(`${reviewingPhoto.id}-${child}`) ? 'Processing...' : 'Approve'}
+                                  {processingConsent[child] ? 'Processing...' : 'Approve'}
                                 </button>
                               </div>
                             ) : null}

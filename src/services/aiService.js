@@ -12,11 +12,51 @@ class AIService {
     console.log(`🎭 Applying REAL ${maskingType} masking to ${childName} in photo ${photoId}`)
     
     try {
-      // Get the photo element from the DOM
-      const photoElement = document.querySelector(`[data-photo-id="${photoId}"] img`)
+      // Wait a bit for the DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Get the photo element from the DOM - try multiple selectors
+      let photoElement = document.querySelector(`[data-photo-id="${photoId}"] img`)
       if (!photoElement) {
-        console.error('Photo element not found for masking')
+        // Fallback: try to find by photo ID in any img element
+        photoElement = document.querySelector(`img[src*="photo_${photoId}"]`)
+      }
+      if (!photoElement) {
+        // Another fallback: try to find any img in the photo container
+        const photoContainer = document.querySelector(`[data-photo-id="${photoId}"]`)
+        if (photoContainer) {
+          photoElement = photoContainer.querySelector('img')
+        }
+      }
+      
+      if (!photoElement) {
+        console.error('Photo element not found for masking. Available elements:', {
+          photoId,
+          dataPhotoElements: document.querySelectorAll('[data-photo-id]'),
+          imgElements: document.querySelectorAll('img'),
+          photoContainer: document.querySelector(`[data-photo-id="${photoId}"]`)
+        })
         return { success: false, error: 'Photo element not found' }
+      }
+
+      console.log('Photo element found:', {
+        element: photoElement,
+        src: photoElement.src,
+        naturalWidth: photoElement.naturalWidth,
+        naturalHeight: photoElement.naturalHeight,
+        width: photoElement.width,
+        height: photoElement.height
+      })
+
+      // Wait for image to be fully loaded
+      if (!photoElement.complete || photoElement.naturalWidth === 0) {
+        console.log('Waiting for image to load...')
+        await new Promise((resolve, reject) => {
+          photoElement.onload = resolve
+          photoElement.onerror = reject
+          // Timeout after 5 seconds
+          setTimeout(() => reject(new Error('Image load timeout')), 5000)
+        })
       }
 
       // Create masked version using Canvas API
@@ -48,6 +88,7 @@ class AIService {
         }
         
         console.log(`✅ REAL Privacy masking applied: ${maskingType} for ${childName}`)
+        console.log(`✅ Masked photo URL: ${maskedPhotoUrl}`)
         return result
       } else {
         throw new Error('Failed to create masked photo')
