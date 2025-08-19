@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePhotos } from '../contexts/PhotoContext'
 import PhotoUpload from '../components/PhotoUpload'
+import ConsentManagement from '../components/ConsentManagement'
 import {
   Camera,
   Plus,
@@ -41,33 +42,61 @@ const Dashboard = () => {
   const [showPhotoUpload, setShowPhotoUpload] = useState(false)
   const [editingPhoto, setEditingPhoto] = useState(null)
   const [deletingPhoto, setDeletingPhoto] = useState(null)
-  const [reviewingPhoto, setReviewingPhoto] = useState(null)
+  const [consentPhoto, setConsentPhoto] = useState(null) // Simplified consent management
   const [processingConsent, setProcessingConsent] = useState({}) // Track which children are being processed
   const [enlargedPhoto, setEnlargedPhoto] = useState(null)
   const [lastUpdate, setLastUpdate] = useState(Date.now())
 
-  // Handle photo upload completion and automatically open review
+  // Handle photo upload completion and show consent management
   const handlePhotoUploadComplete = (uploadedPhoto) => {
-    console.log('Dashboard: Photo upload completed, opening review modal for:', uploadedPhoto)
-    setReviewingPhoto(uploadedPhoto)
-    setShowPhotoUpload(false) // Close upload modal
+    console.log('Dashboard: Photo upload completed, showing consent management for:', uploadedPhoto)
+    setConsentPhoto(uploadedPhoto)
+  }
+
+  // Handle consent management save
+  const handleConsentSave = async (photoId, childrenWithConsent, childrenWithoutConsent) => {
+    console.log('Dashboard: Processing consent save:', {
+      photoId,
+      childrenWithConsent,
+      childrenWithoutConsent
+    })
+
+    try {
+      // Process each child's consent
+      for (const child of childrenWithConsent) {
+        await giveConsent(photoId, child)
+      }
+      
+      for (const child of childrenWithoutConsent) {
+        await revokeConsent(photoId, child)
+      }
+
+      // Close consent management and refresh
+      setConsentPhoto(null)
+      setLastUpdate(Date.now())
+      
+      console.log('Dashboard: Consent processing completed successfully')
+      
+    } catch (error) {
+      console.error('Dashboard: Error processing consent:', error)
+    }
   }
 
   // Monitor reviewingPhoto changes for debugging
   useEffect(() => {
-    if (reviewingPhoto) {
-      console.log('Dashboard: reviewingPhoto state changed:', {
-        id: reviewingPhoto?.id,
-        title: reviewingPhoto?.title,
-        status: reviewingPhoto?.status,
-        consentGiven: reviewingPhoto?.consentGiven,
-        consentPending: reviewingPhoto?.consentPending,
-        children: reviewingPhoto?.children,
-        maskingInfo: reviewingPhoto?.maskingInfo,
-        maskedUrl: reviewingPhoto?.maskedUrl
+    if (consentPhoto) {
+      console.log('Dashboard: consentPhoto state changed:', {
+        id: consentPhoto?.id,
+        title: consentPhoto?.title,
+        status: consentPhoto?.status,
+        consentGiven: consentPhoto?.consentGiven,
+        consentPending: consentPhoto?.consentPending,
+        children: consentPhoto?.children,
+        maskingInfo: consentPhoto?.maskingInfo,
+        maskedUrl: consentPhoto?.maskedUrl
       })
     }
-  }, [reviewingPhoto])
+  }, [consentPhoto])
 
   const stats = [
     {
@@ -158,17 +187,17 @@ const Dashboard = () => {
   }
 
   const handleGiveConsent = async (childName) => {
-    if (!reviewingPhoto) return
+    if (!consentPhoto) return
 
     setProcessingConsent((prev) => ({ ...prev, [childName]: true }))
 
     try {
       console.log('Dashboard: Giving consent for:', childName)
-      const updatedPhoto = await giveConsent(reviewingPhoto.id, childName)
+      const updatedPhoto = await giveConsent(consentPhoto.id, childName)
 
       if (updatedPhoto) {
-        console.log('Dashboard: Consent given successfully, updating reviewing photo')
-        setReviewingPhoto(updatedPhoto)
+        console.log('Dashboard: Consent given successfully, updating consent photo')
+        setConsentPhoto(updatedPhoto)
       }
     } catch (error) {
       console.error('Dashboard: Error giving consent:', error)
@@ -178,17 +207,17 @@ const Dashboard = () => {
   }
 
   const handleDenyConsent = async (childName) => {
-    if (!reviewingPhoto) return
+    if (!consentPhoto) return
 
     setProcessingConsent((prev) => ({ ...prev, [childName]: true }))
 
     try {
       console.log('Dashboard: Denying consent for:', childName)
-      const updatedPhoto = await denyConsent(reviewingPhoto.id, childName)
+      const updatedPhoto = await revokeConsent(consentPhoto.id, childName)
 
       if (updatedPhoto) {
-        console.log('Dashboard: Consent denied successfully, updating reviewing photo')
-        setReviewingPhoto(updatedPhoto)
+        console.log('Dashboard: Consent denied successfully, updating consent photo')
+        setConsentPhoto(updatedPhoto)
       }
     } catch (error) {
       console.error('Dashboard: Error denying consent:', error)
@@ -198,17 +227,17 @@ const Dashboard = () => {
   }
 
   const handleRevokeConsent = async (childName) => {
-    if (!reviewingPhoto) return
+    if (!consentPhoto) return
 
     setProcessingConsent((prev) => ({ ...prev, [childName]: true }))
 
     try {
       console.log('Dashboard: Revoking consent for:', childName)
-      const updatedPhoto = await revokeConsent(reviewingPhoto.id, childName)
+      const updatedPhoto = await revokeConsent(consentPhoto.id, childName)
 
       if (updatedPhoto) {
-        console.log('Dashboard: Consent revoked successfully, updating reviewing photo')
-        setReviewingPhoto(updatedPhoto)
+        console.log('Dashboard: Consent revoked successfully, updating consent photo')
+        setConsentPhoto(updatedPhoto)
       }
     } catch (error) {
       console.error('Dashboard: Error revoking consent:', error)
@@ -516,7 +545,7 @@ const Dashboard = () => {
                             </button>
                           )}
                           <button
-                            onClick={() => setReviewingPhoto(photo)}
+                            onClick={() => setConsentPhoto(photo)}
                             className="text-xs bg-kindrid-100 text-kindrid-700 px-2 py-1 rounded hover:bg-kindrid-200"
                           >
                             Review
@@ -696,153 +725,14 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Photo Review Modal */}
-      {reviewingPhoto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">Review Photo Permissions</h2>
-                <button onClick={() => setReviewingPhoto(null)} className="text-gray-500 hover:text-gray-700">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Photo Display with Enlarge Option */}
-              <div className="mb-6 relative">
-                <div className="relative group cursor-pointer" onClick={() => handlePhotoEnlarge(reviewingPhoto)}>
-                  {renderPhotoImage(reviewingPhoto)}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white text-lg font-semibold">
-                      Click to Enlarge
-                    </div>
-                  </div>
-                </div>
-
-                {/* AI Masked Badge */}
-                {reviewingPhoto.maskedUrl && (
-                  <div className="absolute top-2 right-2 bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                    🎭 AI Masked
-                  </div>
-                )}
-              </div>
-
-              {/* Publish Button for Finalized Photos */}
-              {reviewingPhoto.maskedUrl && !reviewingPhoto.isPublished && (
-                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-green-800">Photo Ready for Publishing</h3>
-                      <p className="text-green-600 text-sm">
-                        This photo has been AI-processed and is ready to be finalized. Publishing will prevent further editing.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        publishPhoto(reviewingPhoto.id)
-                        setReviewingPhoto(null)
-                      }}
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
-                    >
-                      🚀 Publish Photo
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Published Status */}
-              {reviewingPhoto.isPublished && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="text-blue-600 mr-2">✅</div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-blue-800">Photo Published</h3>
-                      <p className="text-blue-600 text-sm">This photo has been finalized and cannot be edited further.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Children List */}
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                  Children in Photo ({reviewingPhoto?.children?.length || 0})
-                </h3>
-
-                {reviewingPhoto?.children?.map((child) => {
-                  const hasConsent = reviewingPhoto.consentGiven?.includes(child.id) || false
-                  const isProcessing = processingConsent[child.id] || false
-                  const canEdit = canEditPhoto(reviewingPhoto.id)
-
-                  return (
-                    <div
-                      key={child.id}
-                      className={`flex items-center justify-between p-3 rounded-lg border ${
-                        hasConsent ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                          <span className="text-gray-600 font-semibold">{child.name.charAt(0).toUpperCase()}</span>
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-800">{child.name}</p>
-                          <p className={`text-sm ${hasConsent ? 'text-green-600' : 'text-red-600'}`}>
-                            {hasConsent ? 'Consent Given' : 'No Consent'}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex space-x-2">
-                        {!reviewingPhoto.isPublished && canEdit && (
-                          <>
-                            {hasConsent ? (
-                              <button
-                                onClick={() => handleRevokeConsent(child.id)}
-                                disabled={isProcessing}
-                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                                  isProcessing ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 text-white'
-                                }`}
-                              >
-                                {isProcessing ? 'Processing...' : 'Revoke'}
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleGiveConsent(child.id)}
-                                disabled={isProcessing}
-                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                                  isProcessing ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'
-                                }`}
-                              >
-                                {isProcessing ? 'Processing...' : 'Give Consent'}
-                              </button>
-                            )}
-                          </>
-                        )}
-
-                        {reviewingPhoto.isPublished && (
-                          <div className="text-blue-600 text-sm font-semibold">✅ Published</div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Action Buttons */}
-              {!reviewingPhoto.isPublished && (
-                <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    onClick={() => setReviewingPhoto(null)}
-                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Close
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Consent Management Modal */}
+      {consentPhoto && (
+        <ConsentManagement
+          photo={consentPhoto}
+          onClose={() => setConsentPhoto(null)}
+          onSave={handleConsentSave}
+          processingConsent={processingConsent}
+        />
       )}
 
       {/* Enlarged Photo Modal */}

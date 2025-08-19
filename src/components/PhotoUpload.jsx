@@ -138,12 +138,12 @@ const PhotoUpload = ({ onClose, onUploadComplete }) => {
       
       console.log('PhotoUpload: Submitting photo data:', photoData)
       
-      // Upload photo using new function signature
+      // Upload photo and immediately show consent management
       const uploadedPhoto = await uploadPhoto(photoData)
       
       if (uploadedPhoto) {
         console.log('PhotoUpload: Photo uploaded successfully:', uploadedPhoto)
-        setUploadStatus('Photo uploaded successfully! AI processing completed.')
+        setUploadStatus('Photo uploaded successfully! Managing consent...')
         
         // Reset form
         setSelectedFile(null)
@@ -158,16 +158,11 @@ const PhotoUpload = ({ onClose, onUploadComplete }) => {
           tags: ''
         })
         
-        // Close modal after short delay
-        setTimeout(() => {
-          onClose()
-        }, 2000)
+        // Close upload modal and show consent management
+        onClose()
         
-        // If the photo should be reviewed, trigger the review modal
-        if (uploadedPhoto.shouldReview) {
-          // Emit an event or callback to open the review modal
-          // This will be handled by the parent component
-          console.log('PhotoUpload: Photo ready for review - should open review modal')
+        // Trigger consent management lightbox
+        if (onUploadComplete) {
           onUploadComplete(uploadedPhoto)
         }
       } else {

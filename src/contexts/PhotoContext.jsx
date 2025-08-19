@@ -75,7 +75,7 @@ export const PhotoProvider = ({ children }) => {
 
   const uploadPhoto = async (photoData) => {
     try {
-      console.log('PhotoContext: Starting upload with metadata:', photoData)
+      console.log('PhotoContext: Starting photo upload process')
       
       // Create new photo object
       const newPhoto = {
@@ -123,35 +123,10 @@ export const PhotoProvider = ({ children }) => {
       // Wait a moment for state to settle
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      // Start AI processing
-      console.log('PhotoContext: Starting AI processing for photo:', newPhoto.id)
-      const aiResult = await aiService.processPhoto(newPhoto.id, newPhoto)
-      console.log('PhotoContext: AI processing complete:', aiResult)
+      console.log('PhotoContext: Photo upload completed successfully')
       
-      // Update photo with AI results
-      const updatedPhoto = {
-        ...newPhoto,
-        aiProcessed: true,
-        status: 'approved',
-        aiFeatures: aiResult.processing || {}
-      }
-      
-      // Update the photo in both states
-      setPhotos(prev => prev.map(photo => 
-        photo.id === newPhoto.id ? updatedPhoto : photo
-      ))
-      
-      setPendingConsent(prev => prev.map(photo => 
-        photo.id === newPhoto.id ? updatedPhoto : photo
-      ))
-      
-      // Force another re-render
-      setLastUpdate(Date.now())
-      
-      console.log('PhotoContext: Photo upload and AI processing completed successfully')
-      
-      // Return the updated photo and trigger review modal
-      return { ...updatedPhoto, shouldReview: true }
+      // Return the photo for consent management
+      return newPhoto
       
     } catch (error) {
       console.error('PhotoContext: Error uploading photo:', error)
