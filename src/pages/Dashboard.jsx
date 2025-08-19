@@ -63,6 +63,11 @@ const Dashboard = () => {
     setProcessingConsent(true)
     
     try {
+      // Show processing message
+      if (childrenWithoutConsent.length > 0) {
+        alert(`Processing consent... AI will now remove ${childrenWithoutConsent.join(', ')} from the photo. This may take a few moments.`)
+      }
+      
       // Use the new function that processes all consent and applies AI masking at once
       const updatedPhoto = await processConsentAndApplyMasking(photoId, childrenWithConsent, childrenWithoutConsent)
       
@@ -77,14 +82,18 @@ const Dashboard = () => {
         setLastUpdate(Date.now())
         
         // Show success message
-        alert('Photo consent saved! AI masking has been applied to remove children without consent.')
+        if (childrenWithoutConsent.length > 0) {
+          alert(`Photo consent saved! AI has successfully removed ${childrenWithoutConsent.join(', ')} from the photo.`)
+        } else {
+          alert('Photo consent saved! All children have consent.')
+        }
       } else {
         console.error('Dashboard: Failed to process consent and apply masking')
         alert('Error saving consent. Please try again.')
       }
     } catch (error) {
       console.error('Dashboard: Error in handleConsentSave:', error)
-      alert('Error saving consent. Please try again.')
+      alert(`Error saving consent: ${error.message}. Please try again.`)
     } finally {
       setProcessingConsent(false)
     }

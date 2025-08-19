@@ -680,53 +680,71 @@ export const PhotoProvider = ({ children }) => {
       if (childrenWithoutConsent.length > 0) {
         console.log('PhotoContext: Applying AI masking for children without consent')
         
-        // Find the photo element for AI processing
-        let photoElement = document.querySelector(`[data-photo-id="${photoId}"] img`)
-        if (!photoElement) {
-          // Fallback: try to find any visible image
-          const allImages = document.querySelectorAll('img')
-          const visibleImages = Array.from(allImages).filter(img => 
-            img.offsetWidth > 0 && img.offsetHeight > 0 && img.src
-          )
-          if (visibleImages.length > 0) {
-            photoElement = visibleImages[0]
+        // Create a new Image object from the photo URL for AI processing
+        const photoImage = new Image()
+        photoImage.crossOrigin = 'anonymous'
+        
+        // Wait for the image to load
+        await new Promise((resolve, reject) => {
+          photoImage.onload = resolve
+          photoImage.onerror = reject
+          
+          // Add timeout to prevent infinite waiting
+          const timeout = setTimeout(() => {
+            reject(new Error('Image loading timeout'))
+          }, 10000) // 10 second timeout
+          
+          photoImage.onload = () => {
+            clearTimeout(timeout)
+            resolve()
+          }
+          
+          photoImage.onerror = () => {
+            clearTimeout(timeout)
+            reject(new Error('Failed to load image'))
+          }
+          
+          photoImage.src = currentPhoto.url
+        })
+        
+        console.log('PhotoContext: Photo image loaded for AI processing:', {
+          width: photoImage.width,
+          height: photoImage.height,
+          src: photoImage.src
+        })
+        
+        // Process each child without consent
+        let finalMaskedPhoto = null
+        
+        for (const childName of childrenWithoutConsent) {
+          console.log('PhotoContext: Processing AI masking for:', childName)
+          
+          try {
+            const maskingResult = await aiService.createUltraSimpleMask(photoImage, childName)
+            
+            if (maskingResult && maskingResult.blob) {
+              // Store the masked photo
+              const maskedPhotoUrl = await storeMaskedPhoto(photoId, childName, maskingResult)
+              finalMaskedPhoto = maskedPhotoUrl
+              
+              console.log('PhotoContext: AI masking completed for:', childName)
+            }
+          } catch (error) {
+            console.error('PhotoContext: AI masking failed for:', childName, error)
           }
         }
         
-        if (photoElement) {
-          // Process each child without consent
-          let finalMaskedPhoto = null
-          
-          for (const childName of childrenWithoutConsent) {
-            console.log('PhotoContext: Processing AI masking for:', childName)
-            
-            try {
-              const maskingResult = await aiService.createUltraSimpleMask(photoElement, childName)
-              
-              if (maskingResult && maskingResult.blob) {
-                // Store the masked photo
-                const maskedPhotoUrl = await storeMaskedPhoto(photoId, childName, maskingResult)
-                finalMaskedPhoto = maskedPhotoUrl
-                
-                console.log('PhotoContext: AI masking completed for:', childName)
-              }
-            } catch (error) {
-              console.error('PhotoContext: AI masking failed for:', childName, error)
-            }
+        // Update the photo with final masking info
+        if (finalMaskedPhoto) {
+          updatedPhoto.maskedUrl = finalMaskedPhoto
+          updatedPhoto.aiProcessed = true
+          updatedPhoto.maskingInfo = {
+            action: 'consent_processed',
+            maskedChildren: childrenWithoutConsent,
+            technique: 'ai_removal',
+            appliedAt: new Date().toISOString()
           }
-          
-          // Update the photo with final masking info
-          if (finalMaskedPhoto) {
-            updatedPhoto.maskedUrl = finalMaskedPhoto
-            updatedPhoto.aiProcessed = true
-            updatedPhoto.maskingInfo = {
-              action: 'consent_processed',
-              maskedChildren: childrenWithoutConsent,
-              technique: 'ai_removal',
-              appliedAt: new Date().toISOString()
-            }
-            updatedPhoto.lastMaskingApplied = new Date().toISOString()
-          }
+          updatedPhoto.lastMaskingApplied = new Date().toISOString()
         }
       }
       
