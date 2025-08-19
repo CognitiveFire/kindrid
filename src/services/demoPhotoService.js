@@ -176,9 +176,18 @@ class DemoPhotoService {
   }
 
   removePhoto(id) {
-    console.log('DemoPhotoService: Removing photo:', id)
-    console.log('DemoPhotoService: Current photos before removal:', this.photos.map(p => ({ id: p.id, title: p.title })))
+    console.log('DemoPhotoService: 🚨 REMOVE PHOTO CALLED! 🚨')
+    console.log('DemoPhotoService: Photo ID to remove:', id)
+    console.log('DemoPhotoService: Current photos before removal:', this.photos.map(p => ({ id: p.id, title: p.title, status: p.status, uploadedAt: p.uploadedAt })))
     console.log('DemoPhotoService: Call stack:', new Error().stack)
+    
+    // TEMPORARY BREAKPOINT - pause execution to see what's calling this
+    debugger;
+    
+    // AGGRESSIVE PROTECTION: Block ALL photo removals for now
+    console.error('DemoPhotoService: 🛑 BLOCKING ALL PHOTO REMOVALS FOR DEBUGGING 🛑')
+    console.error('DemoPhotoService: This should not be happening in normal operation')
+    return null;
     
     // PROTECTION: Don't remove photos that were just uploaded
     const photoToRemove = this.photos.find(p => p.id === id)
