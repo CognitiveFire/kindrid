@@ -44,13 +44,8 @@ export const PhotoProvider = ({ children }) => {
     setUserRole('teacher') // Default to teacher for demo
     setUserChildren(['Emma', 'Lucas']) // Mock children for parent view
 
-    return () => { // Cleanup function
-      photos.forEach(photo => {
-        if (photo.url && photo.url.startsWith('blob:')) {
-          URL.revokeObjectURL(photo.url)
-        }
-      })
-    }
+    // REMOVED CLEANUP FUNCTION - it was causing photos to be removed
+    // Photos are now persisted in localStorage and won't be accidentally cleaned up
   }, [])
 
   // Check if user can manage consent for a specific photo

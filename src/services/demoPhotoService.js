@@ -180,6 +180,31 @@ class DemoPhotoService {
     console.log('DemoPhotoService: Current photos before removal:', this.photos.map(p => ({ id: p.id, title: p.title })))
     console.log('DemoPhotoService: Call stack:', new Error().stack)
     
+    // PROTECTION: Don't remove photos that were just uploaded
+    const photoToRemove = this.photos.find(p => p.id === id)
+    if (photoToRemove && photoToRemove.status === 'pending_consent') {
+      console.warn('DemoPhotoService: WARNING - Attempting to remove photo with pending consent status!')
+      console.warn('DemoPhotoService: This might be an accidental removal. Photo details:', {
+        id: photoToRemove.id,
+        title: photoToRemove.title,
+        status: photoToRemove.status,
+        uploadedAt: photoToRemove.uploadedAt
+      })
+      
+      // Only allow removal if it's been more than 5 seconds since upload
+      if (photoToRemove.uploadedAt) {
+        const uploadTime = new Date(photoToRemove.uploadedAt).getTime()
+        const currentTime = Date.now()
+        const timeSinceUpload = currentTime - uploadTime
+        
+        if (timeSinceUpload < 5000) { // Less than 5 seconds
+          console.error('DemoPhotoService: BLOCKED - Photo was uploaded too recently to remove safely')
+          console.error('DemoPhotoService: Time since upload:', timeSinceUpload, 'ms')
+          return null
+        }
+      }
+    }
+    
     const index = this.photos.findIndex(photo => photo.id === id)
     if (index !== -1) {
       const removedPhoto = this.photos.splice(index, 1)[0]
