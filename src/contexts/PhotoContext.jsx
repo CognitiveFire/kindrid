@@ -26,6 +26,7 @@ export const PhotoProvider = ({ children }) => {
   const [isFaceLearning, setIsFaceLearning] = useState(false)
   const [faceLearningProgress, setFaceLearningProgress] = useState(0)
   const [learnedFaces, setLearnedFaces] = useState([])
+  const [lastUpdate, setLastUpdate] = useState(Date.now()) // State to force re-renders
 
   useEffect(() => {
     // Load demo photos from service
@@ -72,115 +73,85 @@ export const PhotoProvider = ({ children }) => {
     return []
   }
 
-  const uploadPhoto = async (file, metadata) => {
-    console.log('PhotoContext: Starting upload with metadata:', metadata)
-    
-    // Only teachers can upload photos
-    if (userRole !== 'teacher') {
-      console.error('Only teachers can upload photos')
-      return null
-    }
-
-    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-
-    // Convert file to data URL for persistence (prevents disappearing on refresh)
-    const dataUrl = await new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result)
-      reader.readAsDataURL(file)
-    })
-
-    const newPhoto = {
-      id: uniqueId,
-      url: dataUrl, // Use data URL instead of blob URL for persistence
-      title: metadata.title,
-      description: metadata.description,
-      date: new Date().toISOString().split('T')[0],
-      location: metadata.location,
-      teacher: metadata.teacher,
-      children: metadata.children,
-      status: 'ai_processing',
-      aiProcessed: false,
-      consentGiven: [],
-      consentPending: metadata.children,
-      tags: metadata.tags || []
-    }
-
-    console.log('PhotoContext: Created new photo object:', newPhoto)
-    const existingPhoto = photos.find(p => p.id === uniqueId)
-    if (existingPhoto) {
-      console.error('PhotoContext: Photo with this ID already exists:', uniqueId)
-      return null
-    }
-
-    // Add to demo service first
-    const addedPhoto = demoPhotoService.addPhoto(newPhoto)
-    if (!addedPhoto) {
-      console.error('PhotoContext: Failed to add photo to demo service')
-      return null
-    }
-    console.log('PhotoContext: Added photo to demo service')
-
-    // Update local state immediately with the new photo
-    setPhotos(prev => {
-      console.log('PhotoContext: Updating photos state, current count:', prev.length)
-      const updated = [newPhoto, ...prev]
-      console.log('PhotoContext: New photos state count:', updated.length)
-      return updated
-    })
-
-    setPendingConsent(prev => {
-      console.log('PhotoContext: Updating pending consent, current count:', prev.length)
-      const updated = [newPhoto, ...prev]
-      console.log('PhotoContext: New pending consent count:', updated.length)
-      return updated
-    })
-
-    setAiProcessing(true)
+  const uploadPhoto = async (photoData) => {
     try {
-      console.log('PhotoContext: Starting AI processing for photo:', newPhoto.id)
-      const processedPhoto = await aiService.processPhoto(newPhoto.id, newPhoto)
-      console.log('PhotoContext: AI processing complete:', processedPhoto)
-
-      const updatedPhoto = {
-        ...processedPhoto,
+      console.log('PhotoContext: Starting upload with metadata:', photoData)
+      
+      // Create new photo object
+      const newPhoto = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title: photoData.title || 'Untitled Photo',
+        description: photoData.description || '',
+        location: photoData.location || '',
+        teacher: photoData.teacher || '',
+        date: photoData.date || new Date().toISOString(),
+        url: photoData.url,
+        currentDisplayUrl: photoData.url,
+        children: photoData.children || [],
+        consentGiven: [],
+        consentPending: photoData.children || [],
         status: 'pending_consent',
-        aiProcessed: true
+        aiProcessed: false,
+        uploadedAt: new Date().toISOString()
       }
-      console.log('PhotoContext: Updating photo with AI results:', updatedPhoto)
-      demoPhotoService.updatePhoto(newPhoto.id, updatedPhoto)
-
-      // Update the photo in local state
-      setPhotos(prev =>
-        prev.map(p =>
-          p.id === newPhoto.id ? updatedPhoto : p
-        )
-      )
-      setPendingConsent(prev =>
-        prev.map(p =>
-          p.id === newPhoto.id ? updatedPhoto : p
-        )
-      )
-      const stats = demoPhotoService.getAIStats()
-      setAiStats(stats)
-
-    } catch (error) {
-      console.error('AI processing failed:', error)
-      const failedPhoto = {
+      
+      console.log('PhotoContext: Created new photo object:', newPhoto)
+      
+      // Add to demo service
+      demoPhotoService.addPhoto(newPhoto)
+      console.log('PhotoContext: Added photo to demo service')
+      
+      // Update local state - force re-render
+      setPhotos(prev => {
+        const updated = [...prev, newPhoto]
+        console.log('PhotoContext: Updating photos state, current count:', prev.length)
+        console.log('PhotoContext: New photos state count:', updated.length)
+        return updated
+      })
+      
+      // Update pending consent state - force re-render
+      setPendingConsent(prev => {
+        const updated = [...prev, newPhoto]
+        console.log('PhotoContext: Updating pending consent, current count:', prev.length)
+        console.log('PhotoContext: New pending consent count:', updated.length)
+        return updated
+      })
+      
+      // Force a re-render by updating a timestamp
+      setLastUpdate(Date.now())
+      
+      // Start AI processing
+      console.log('PhotoContext: Starting AI processing for photo:', newPhoto.id)
+      const aiResult = await aiService.processPhoto(newPhoto.id, newPhoto)
+      console.log('PhotoContext: AI processing complete:', aiResult)
+      
+      // Update photo with AI results
+      const updatedPhoto = {
         ...newPhoto,
-        status: 'ai_failed',
-        aiProcessed: false
+        aiProcessed: true,
+        status: 'approved',
+        aiFeatures: aiResult.processing || {}
       }
-      demoPhotoService.updatePhoto(newPhoto.id, failedPhoto)
-      setPhotos(prev =>
-        prev.map(p =>
-          p.id === newPhoto.id ? failedPhoto : p
-        )
-      )
-    } finally {
-      setAiProcessing(false)
+      
+      // Update the photo in both states
+      setPhotos(prev => prev.map(photo => 
+        photo.id === newPhoto.id ? updatedPhoto : photo
+      ))
+      
+      setPendingConsent(prev => prev.map(photo => 
+        photo.id === newPhoto.id ? updatedPhoto : photo
+      ))
+      
+      // Force another re-render
+      setLastUpdate(Date.now())
+      
+      console.log('PhotoContext: Photo upload and AI processing completed successfully')
+      return updatedPhoto
+      
+    } catch (error) {
+      console.error('PhotoContext: Error uploading photo:', error)
+      throw error
     }
-    return newPhoto
   }
 
   const giveConsent = async (photoId, childName) => {

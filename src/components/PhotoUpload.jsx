@@ -104,45 +104,69 @@ const PhotoUpload = ({ onClose }) => {
     e.preventDefault()
     
     if (!selectedFile) {
-      setUploadStatus('Please select a file')
+      setUploadStatus('Please select a photo to upload')
       return
     }
-
+    
     if (childrenNames.length === 0) {
-      setUploadStatus('Please add at least one child name')
+      setUploadStatus('Please add at least one child to the photo')
       return
     }
-
+    
     setIsUploading(true)
-    setUploadStatus('Uploading...')
-
+    setUploadStatus('') // Clear previous status
+    
     try {
-      const metadata = {
+      // Convert file to data URL for persistence
+      const dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.readAsDataURL(selectedFile)
+      })
+      
+      // Prepare photo data
+      const photoData = {
+        url: dataUrl,
         title: formData.title,
         description: formData.description,
         location: formData.location,
         teacher: formData.teacher,
+        date: new Date().toISOString().split('T')[0],
         children: childrenNames,
-        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [],
-        childTags: childTags,
-        faceLearningData: childTags.length > 0 ? {
-          taggedChildren: childTags,
-          timestamp: new Date().toISOString()
-        } : null
+        tags: childTags
       }
-
-      const result = await uploadPhoto(selectedFile, metadata)
       
-      if (result) {
-        setUploadStatus('Upload successful! Photo is being processed by AI...')
+      console.log('PhotoUpload: Submitting photo data:', photoData)
+      
+      // Upload photo using new function signature
+      const uploadedPhoto = await uploadPhoto(photoData)
+      
+      if (uploadedPhoto) {
+        console.log('PhotoUpload: Photo uploaded successfully:', uploadedPhoto)
+        setUploadStatus('Photo uploaded successfully! AI processing completed.')
+        
+        // Reset form
+        setSelectedFile(null)
+        setChildrenNames([])
+        setChildTags([])
+        setFormData({
+          title: '',
+          description: '',
+          location: '',
+          teacher: '',
+          children: '',
+          tags: ''
+        })
+        
+        // Close modal after short delay
         setTimeout(() => {
           onClose()
         }, 2000)
       } else {
-        setUploadStatus('Upload failed. Please try again.')
+        throw new Error('Upload failed - no photo returned')
       }
     } catch (error) {
-      console.error('Upload error:', error)
+      console.error('PhotoUpload: Upload error:', error)
       setUploadStatus('Upload failed: ' + error.message)
     } finally {
       setIsUploading(false)
