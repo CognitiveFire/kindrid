@@ -26,19 +26,32 @@ const ConsentManagement = ({ photo, onClose, onSave, processingConsent }) => {
   const handleSave = async () => {
     if (isProcessing) return
     
+    console.log('ConsentManagement: Save button clicked!')
+    console.log('ConsentManagement: Current consent status:', consentStatus)
+    console.log('ConsentManagement: Photo ID:', photo.id)
+    
     setIsProcessing(true)
+    console.log('ConsentManagement: Set isProcessing to true')
     
     try {
       // Collect children with and without consent
       const childrenWithConsent = Object.keys(consentStatus).filter(child => consentStatus[child])
       const childrenWithoutConsent = Object.keys(consentStatus).filter(child => !consentStatus[child])
       
+      console.log('ConsentManagement: Children with consent:', childrenWithConsent)
+      console.log('ConsentManagement: Children without consent:', childrenWithoutConsent)
+      console.log('ConsentManagement: About to call onSave...')
+      
       // Call parent save function
       await onSave(photo.id, childrenWithConsent, childrenWithoutConsent)
+      
+      console.log('ConsentManagement: onSave completed successfully')
     } catch (error) {
-      console.error('Error saving consent:', error)
+      console.error('ConsentManagement: Error in handleSave:', error)
     } finally {
+      console.log('ConsentManagement: Setting isProcessing to false')
       setIsProcessing(false)
+      console.log('ConsentManagement: handleSave function completed')
     }
   }
 
