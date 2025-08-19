@@ -761,6 +761,37 @@ export const PhotoProvider = ({ children }) => {
     setUserChildren(children)
   }
 
+  // Publish a photo to finalize it and prevent further editing
+  const publishPhoto = async (photoId) => {
+    setPhotos(prevPhotos => 
+      prevPhotos.map(photo => 
+        photo.id === photoId 
+          ? { 
+              ...photo, 
+              isPublished: true,
+              publishedAt: new Date().toISOString(),
+              maskingInfo: {
+                ...photo.maskingInfo,
+                isPublished: true,
+                publishedAt: new Date().toISOString()
+              }
+            }
+          : photo
+      )
+    )
+    
+    setPendingConsent(prev => prev.filter(p => p.photoId !== photoId))
+    setLastUpdate(Date.now())
+    
+    console.log(`✅ Photo ${photoId} published - no further editing allowed`)
+  }
+
+  // Check if a photo can be edited (not published)
+  const canEditPhoto = (photoId) => {
+    const photo = photos.find(p => p.id === photoId)
+    return photo && !photo.isPublished
+  }
+
   const value = {
     photos,
     pendingConsent,
@@ -790,7 +821,9 @@ export const PhotoProvider = ({ children }) => {
     applyCustomMasking,
     revertToOriginal,
     switchUserRole,
-    setUserChildrenList
+    setUserChildrenList,
+    publishPhoto,
+    canEditPhoto
   }
 
   return (

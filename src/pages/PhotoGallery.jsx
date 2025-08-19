@@ -32,6 +32,7 @@ const PhotoGallery = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [viewMode, setViewMode] = useState('grid')
+  const [enlargedPhoto, setEnlargedPhoto] = useState(null)
 
   // Filter photos based on search and status
   const filteredPhotos = useMemo(() => {
@@ -157,6 +158,16 @@ const PhotoGallery = () => {
     )
   }
 
+  // Handle photo enlargement
+  const handlePhotoEnlarge = (photo) => {
+    setEnlargedPhoto(photo)
+  }
+
+  // Close enlarged photo view
+  const handleCloseEnlarged = () => {
+    setEnlargedPhoto(null)
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
@@ -245,8 +256,13 @@ const PhotoGallery = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPhotos.map((photo) => (
             <div key={photo.id} className="card">
-              <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg overflow-hidden mb-4">
+              <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg overflow-hidden mb-4 relative group cursor-pointer" onClick={() => handlePhotoEnlarge(photo)}>
                 {renderPhotoImage(photo)}
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white text-lg font-semibold">
+                    Click to Enlarge
+                  </div>
+                </div>
               </div>
               
               <div className="space-y-3">
@@ -405,6 +421,47 @@ const PhotoGallery = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enlarged Photo Modal */}
+      {enlargedPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-[90vw] max-h-[90vh]">
+            <button
+              onClick={handleCloseEnlarged}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+            >
+              ✕
+            </button>
+            
+            <div className="relative">
+              {renderPhotoImage(enlargedPhoto)}
+              
+              {/* AI Masked Badge */}
+              {enlargedPhoto.maskedUrl && (
+                <div className="absolute top-4 left-4 bg-purple-600 text-white px-4 py-2 rounded-full text-lg font-semibold">
+                  🎭 AI Masked
+                </div>
+              )}
+              
+              {/* Published Badge */}
+              {enlargedPhoto.isPublished && (
+                <div className="absolute top-4 left-20 bg-blue-600 text-white px-4 py-2 rounded-full text-lg font-semibold">
+                  ✅ Published
+                </div>
+              )}
+            </div>
+            
+            <div className="text-center mt-4 text-white">
+              <p className="text-lg">
+                {enlargedPhoto.title || 'Untitled Photo'}
+              </p>
+              <p className="text-sm text-gray-300">
+                Click outside or press X to close
+              </p>
             </div>
           </div>
         </div>
