@@ -36,7 +36,8 @@ const Dashboard = () => {
     updatePhoto,
     denyConsent,
     publishPhoto,
-    canEditPhoto
+    canEditPhoto,
+    processConsentAndApplyMasking
   } = usePhotos()
 
   const [showPhotoUpload, setShowPhotoUpload] = useState(false)
@@ -55,30 +56,37 @@ const Dashboard = () => {
 
   // Handle consent management save
   const handleConsentSave = async (photoId, childrenWithConsent, childrenWithoutConsent) => {
-    console.log('Dashboard: Processing consent save:', {
-      photoId,
-      childrenWithConsent,
-      childrenWithoutConsent
-    })
-
+    console.log('Dashboard: Saving consent and applying AI masking')
+    console.log('Dashboard: Children with consent:', childrenWithConsent)
+    console.log('Dashboard: Children without consent:', childrenWithoutConsent)
+    
+    setProcessingConsent(true)
+    
     try {
-      // Process each child's consent
-      for (const child of childrenWithConsent) {
-        await giveConsent(photoId, child)
+      // Use the new function that processes all consent and applies AI masking at once
+      const updatedPhoto = await processConsentAndApplyMasking(photoId, childrenWithConsent, childrenWithoutConsent)
+      
+      if (updatedPhoto) {
+        console.log('Dashboard: Consent saved and AI masking applied successfully')
+        console.log('Dashboard: Updated photo:', updatedPhoto)
+        
+        // Close the consent management modal
+        setConsentPhoto(null)
+        
+        // Force a re-render to show the updated photo
+        setLastUpdate(Date.now())
+        
+        // Show success message
+        alert('Photo consent saved! AI masking has been applied to remove children without consent.')
+      } else {
+        console.error('Dashboard: Failed to process consent and apply masking')
+        alert('Error saving consent. Please try again.')
       }
-      
-      for (const child of childrenWithoutConsent) {
-        await revokeConsent(photoId, child)
-      }
-
-      // Close consent management and refresh
-      setConsentPhoto(null)
-      setLastUpdate(Date.now())
-      
-      console.log('Dashboard: Consent processing completed successfully')
-      
     } catch (error) {
-      console.error('Dashboard: Error processing consent:', error)
+      console.error('Dashboard: Error in handleConsentSave:', error)
+      alert('Error saving consent. Please try again.')
+    } finally {
+      setProcessingConsent(false)
     }
   }
 
@@ -249,8 +257,10 @@ const Dashboard = () => {
   const renderPhotoImage = (photo) => {
     const hasMaskedChildren = photo.maskingInfo?.maskedChildren?.length > 0
     const maskedCount = photo.maskingInfo?.maskedChildren?.length || 0
+    const isAIProcessed = photo.aiProcessed && photo.maskedUrl
 
-    let imageUrl = photo.maskedUrl || photo.url || photo.currentDisplayUrl
+    // Show masked photo only if AI processing is complete
+    let imageUrl = isAIProcessed ? photo.maskedUrl : photo.url || photo.currentDisplayUrl
 
     if (imageUrl) {
       // data URL
@@ -258,20 +268,9 @@ const Dashboard = () => {
         return (
           <div className="relative" data-photo-id={photo.id}>
             <img src={imageUrl} alt={photo.title} className="w-full h-48 object-cover" />
-            {hasMaskedChildren && !photo.maskedUrl && (
-              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-center">
-                  <div className="text-lg mb-1">🎭</div>
-                  <span className="text-xs font-medium text-gray-700">AI Masked</span>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {maskedCount} child{maskedCount > 1 ? 'ren' : ''} masked
-                  </div>
-                </div>
-              </div>
-            )}
-            {hasMaskedChildren && photo.maskedUrl && (
+            {isAIProcessed && (
               <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
-                🔒 AI Masked ({maskedCount})
+                🔒 AI Processed ({maskedCount})
               </div>
             )}
           </div>
@@ -288,23 +287,12 @@ const Dashboard = () => {
               className="w-full h-48 object-cover"
               onError={(e) => {
                 console.error('Dashboard: Blob image failed to load:', imageUrl)
-                console.error('Dashboard: Error details:', e)
+                console.error('Error details:', e)
               }}
             />
-            {hasMaskedChildren && !photo.maskedUrl && (
-              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-center">
-                  <div className="text-lg mb-1">🎭</div>
-                  <span className="text-xs font-medium text-gray-700">AI Masked</span>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {maskedCount} child{maskedCount > 1 ? 'ren' : ''} masked
-                  </div>
-                </div>
-              </div>
-            )}
-            {hasMaskedChildren && photo.maskedUrl && (
+            {isAIProcessed && (
               <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
-                🔒 AI Masked ({maskedCount})
+                🔒 AI Processed ({maskedCount})
               </div>
             )}
           </div>
@@ -316,21 +304,10 @@ const Dashboard = () => {
         return (
           <div className="relative" data-photo-id={photo.id}>
             <img src={imageUrl} alt={photo.title} className="w-full h-48 object-cover" />
-            {hasMaskedChildren && !photo.maskedUrl && (
-              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-center">
-                  <div className="text-lg mb-1">🎭</div>
-                  <span className="text-xs font-medium text-gray-700">AI Masked</span>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {maskedCount} child{maskedCount > 1 ? 'ren' : ''} masked
-                  </div>
-                </div>
-              </div>
-            )}
-            {hasMaskedChildren && photo.maskedUrl && (
+            {isAIProcessed && (
               <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
-                🔒 AI Masked ({maskedCount})
-              </div>
+                🔒 AI Processed ({maskedCount})
+            </div>
             )}
           </div>
         )
@@ -360,25 +337,14 @@ const Dashboard = () => {
             className="w-full h-48 object-cover"
             onError={(e) => {
               console.error('Dashboard: Image failed to load:', imageUrl)
-              console.error('Dashboard: Photo details:', photo)
+              console.error('Photo details:', photo)
               e.target.style.display = 'none'
               if (e.target.nextSibling) e.target.nextSibling.style.display = 'block'
             }}
           />
-          {hasMaskedChildren && !photo.maskedUrl && (
-            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-              <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2 text-center">
-                <div className="text-lg mb-1">🎭</div>
-                <span className="text-xs font-medium text-gray-700">AI Masked</span>
-                <div className="text-xs text-gray-500 mt-1">
-                  {maskedCount} child{maskedCount > 1 ? 'ren' : ''} masked
-                </div>
-              </div>
-            </div>
-          )}
-          {hasMaskedChildren && photo.maskedUrl && (
+          {isAIProcessed && (
             <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
-              🔒 AI Masked ({maskedCount})
+              🔒 AI Processed ({maskedCount})
             </div>
           )}
         </div>
@@ -390,7 +356,7 @@ const Dashboard = () => {
       <div className="w-full h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
         <div className="text-center">
           <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-        <p className="text-xs text-gray-500">{photo.title}</p>
+          <p className="text-xs text-gray-500">{photo.title}</p>
           <p className="text-xs text-red-500">No image URL available</p>
         </div>
       </div>

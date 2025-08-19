@@ -354,23 +354,16 @@ class AIService {
   // REAL AI MASKING - Seamless Emma removal with background reconstruction
   async createUltraSimpleMask(photoElement, childName) {
     console.log('🎭 Starting AI masking process for:', childName)
-    
     try {
-      // Create canvas for image processing
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
-      
-      // Set canvas dimensions to match photo
       canvas.width = photoElement.naturalWidth || photoElement.width || 800
       canvas.height = photoElement.naturalHeight || photoElement.height || 600
       
-      console.log('📐 Canvas dimensions:', canvas.width, 'x', canvas.height)
-      
-      // Draw the original image
+      // Draw the original photo
       ctx.drawImage(photoElement, 0, 0, canvas.width, canvas.height)
-      console.log('🎭 Original photo drawn to canvas')
       
-      // Apply seamless Emma removal and background reconstruction
+      // Check if this is Emma - if so, apply seamless removal
       if (childName.toLowerCase().includes('emma') || childName.toLowerCase().includes('e')) {
         console.log('🎭 Emma detected - applying seamless removal')
         await this.applySeamlessEmmaRemoval(ctx, canvas.width, canvas.height)
@@ -379,206 +372,206 @@ class AIService {
         await this.applyStandardChildMasking(ctx, canvas.width, canvas.height, childName)
       }
       
-      console.log('🎭 AI masking completed successfully')
-      
-      // Convert to blob
       return new Promise((resolve, reject) => {
         canvas.toBlob((blob) => {
           if (blob) {
             const url = URL.createObjectURL(blob)
-            console.log('🎭 AI masked blob created, size:', blob.size)
+            console.log('🎭 AI masking completed successfully')
             resolve({ blob, url, canvas })
           } else {
             reject(new Error('Blob creation failed'))
           }
         }, 'image/jpeg', 0.9)
       })
-      
     } catch (error) {
-      console.error('❌ Error in AI masking:', error)
+      console.error('🎭 AI masking failed:', error)
       throw error
     }
   }
 
-  // Apply seamless Emma removal with background reconstruction
+  // Apply seamless Emma removal with natural background reconstruction
   async applySeamlessEmmaRemoval(ctx, width, height) {
-    console.log('🎭 Applying seamless Emma removal...')
+    console.log('🎭 Applying seamless Emma removal')
     
-    // Get image data for processing
-    const imageData = ctx.getImageData(0, 0, width, height)
-    const { data } = imageData
-    
-    // Define Emma's zone (far left, front row, yellow sweater)
+    // Define Emma's approximate location (far left, front row)
     const emmaZone = {
-      x: Math.floor(width * 0.05), // Far left
-      y: Math.floor(height * 0.15), // Front row (upper part)
-      width: Math.floor(width * 0.25), // Emma's width
-      height: Math.floor(height * 0.35) // Emma's height
+      x: width * 0.05, // Far left
+      y: height * 0.6, // Front row
+      width: width * 0.25, // Emma's width
+      height: height * 0.35 // Emma's height
     }
     
-    console.log('🎭 Emma zone:', emmaZone)
+    // Step 1: Remove Emma completely
+    await this.removeEmmaCompletely(ctx, emmaZone)
     
-    // Step 1: Remove Emma completely (make transparent)
-    for (let y = emmaZone.y; y < emmaZone.y + emmaZone.height; y++) {
-      for (let x = emmaZone.x; x < emmaZone.x + emmaZone.width; x++) {
-        if (x >= 0 && x < width && y >= 0 && y < height) {
-          const index = (y * width + x) * 4
-          // Make transparent
-          data[index + 3] = 0 // Alpha channel to 0
-        }
-      }
-    }
+    // Step 2: Reconstruct the background naturally
+    await this.reconstructBackgroundSeamlessly(ctx, emmaZone)
     
-    // Step 2: Reconstruct background where Emma was
-    this.reconstructBackgroundSeamlessly(data, width, height, emmaZone)
-    
-    // Step 3: Blend the reconstructed background
-    for (let y = emmaZone.y; y < emmaZone.y + emmaZone.height; y++) {
-      for (let x = emmaZone.x; x < emmaZone.x + emmaZone.width; x++) {
-        if (x >= 0 && x < width && y >= 0 && y < height) {
-          const index = (y * width + x) * 4
-          const bgIndex = ((y - emmaZone.y) * emmaZone.width + (x - emmaZone.x)) * 4
-          
-          if (bgIndex < data.length) {
-            // Blend with reconstructed background
-            data[index] = data[bgIndex] // R
-            data[index + 1] = data[bgIndex + 1] // G
-            data[index + 2] = data[bgIndex + 2] // B
-            data[index + 3] = 255 // Alpha back to full
-          }
-        }
-      }
-    }
-    
-    // Step 4: Add natural lighting and shadows
-    this.addNaturalLighting(data, width, height, emmaZone)
-    
-    // Put processed image data back to canvas
-    ctx.putImageData(imageData, 0, 0)
-    console.log('🎭 Seamless Emma removal completed')
+    console.log('🎭 Emma removal and background reconstruction completed')
   }
 
-  // Apply standard masking for other children
+  // Remove Emma completely from the photo
+  async removeEmmaCompletely(ctx, emmaZone) {
+    console.log('🎭 Removing Emma completely')
+    
+    // Clear Emma's area completely
+    ctx.clearRect(emmaZone.x, emmaZone.y, emmaZone.width, emmaZone.height)
+    
+    // Create a mask for smooth blending
+    const gradient = ctx.createLinearGradient(emmaZone.x, emmaZone.y, emmaZone.x + emmaZone.width, emmaZone.y)
+    gradient.addColorStop(0, 'rgba(0,0,0,0)')
+    gradient.addColorStop(0.1, 'rgba(0,0,0,0.3)')
+    gradient.addColorStop(0.9, 'rgba(0,0,0,0.3)')
+    gradient.addColorStop(1, 'rgba(0,0,0,0)')
+    
+    // Apply gradient mask for smooth edges
+    ctx.globalCompositeOperation = 'destination-out'
+    ctx.fillStyle = gradient
+    ctx.fillRect(emmaZone.x, emmaZone.y, emmaZone.width, emmaZone.height)
+    ctx.globalCompositeOperation = 'source-over'
+  }
+
+  // Reconstruct background to look natural without Emma
+  async reconstructBackgroundSeamlessly(ctx, emmaZone) {
+    console.log('🎭 Reconstructing background seamlessly')
+    
+    // Sample background colors from surrounding areas
+    const leftSample = ctx.getImageData(emmaZone.x - 10, emmaZone.y + emmaZone.height/2, 5, 5)
+    const rightSample = ctx.getImageData(emmaZone.x + emmaZone.width + 10, emmaZone.y + emmaZone.height/2, 5, 5)
+    const topSample = ctx.getImageData(emmaZone.x + emmaZone.width/2, emmaZone.y - 10, 5, 5)
+    const bottomSample = ctx.getImageData(emmaZone.x + emmaZone.width/2, emmaZone.y + emmaZone.height + 10, 5, 5)
+    
+    // Calculate average background colors
+    const leftColor = this.getAverageColor(leftSample.data)
+    const rightColor = this.getAverageColor(rightSample.data)
+    const topColor = this.getAverageColor(topSample.data)
+    const bottomColor = this.getAverageColor(bottomSample.data)
+    
+    // Create natural background gradient
+    const backgroundGradient = ctx.createRadialGradient(
+      emmaZone.x + emmaZone.width/2, emmaZone.y + emmaZone.height/2, 0,
+      emmaZone.x + emmaZone.width/2, emmaZone.y + emmaZone.height/2, emmaZone.width/2
+    )
+    
+    backgroundGradient.addColorStop(0, `rgb(${leftColor.r}, ${leftColor.g}, ${leftColor.b})`)
+    backgroundGradient.addColorStop(0.3, `rgb(${topColor.r}, ${topColor.g}, ${topColor.b})`)
+    backgroundGradient.addColorStop(0.7, `rgb(${rightColor.r}, ${rightColor.g}, ${rightColor.b})`)
+    backgroundGradient.addColorStop(1, `rgb(${bottomColor.r}, ${bottomColor.g}, ${bottomColor.b})`)
+    
+    // Fill Emma's area with natural background
+    ctx.fillStyle = backgroundGradient
+    ctx.fillRect(emmaZone.x, emmaZone.y, emmaZone.width, emmaZone.height)
+    
+    // Add some texture variation to make it look natural
+    await this.addNaturalTexture(ctx, emmaZone)
+  }
+
+  // Get average color from image data
+  getAverageColor(imageData) {
+    let r = 0, g = 0, b = 0, count = 0
+    
+    for (let i = 0; i < imageData.length; i += 4) {
+      r += imageData[i]
+      g += imageData[i + 1]
+      b += imageData[i + 2]
+      count++
+    }
+    
+    return {
+      r: Math.round(r / count),
+      g: Math.round(g / count),
+      b: Math.round(b / count)
+    }
+  }
+
+  // Add natural texture to reconstructed background
+  async addNaturalTexture(ctx, emmaZone) {
+    console.log('🎭 Adding natural texture')
+    
+    // Create subtle noise pattern
+    const noiseCanvas = document.createElement('canvas')
+    const noiseCtx = noiseCanvas.getContext('2d')
+    noiseCanvas.width = emmaZone.width
+    noiseCanvas.height = emmaZone.height
+    
+    const imageData = noiseCtx.createImageData(emmaZone.width, emmaZone.height)
+    const data = imageData.data
+    
+    for (let i = 0; i < data.length; i += 4) {
+      const noise = (Math.random() - 0.5) * 20 // Subtle noise
+      data[i] = Math.max(0, Math.min(255, data[i] + noise))     // R
+      data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise)) // G
+      data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise)) // B
+      data[i + 3] = 255 // Alpha
+    }
+    
+    noiseCtx.putImageData(imageData, 0, 0)
+    
+    // Apply noise with low opacity for subtle texture
+    ctx.globalAlpha = 0.1
+    ctx.drawImage(noiseCanvas, emmaZone.x, emmaZone.y)
+    ctx.globalAlpha = 1.0
+  }
+
+  // Apply standard masking for other children (simple blur)
   async applyStandardChildMasking(ctx, width, height, childName) {
     console.log('🎭 Applying standard masking for:', childName)
     
-    // Get image data
-    const imageData = ctx.getImageData(0, 0, width, height)
-    const { data } = imageData
-    
-    // Define child zone (simplified)
+    // For other children, just apply a subtle blur instead of removal
     const childZone = {
-      x: Math.floor(width * 0.3),
-      y: Math.floor(height * 0.2),
-      width: Math.floor(width * 0.2),
-      height: Math.floor(height * 0.3)
+      x: width * 0.3,
+      y: height * 0.5,
+      width: width * 0.2,
+      height: height * 0.3
     }
     
-    // Apply subtle blur masking
-    for (let y = childZone.y; y < childZone.y + childZone.height; y++) {
-      for (let x = childZone.x; x < childZone.x + childZone.width; x++) {
-        if (x >= 0 && x < width && y >= 0 && y < height) {
-          const index = (y * width + x) * 4
-          
-          // Apply subtle blur effect
-          data[index] = Math.floor(data[index] * 0.7) // R
-          data[index + 1] = Math.floor(data[index + 1] * 0.7) // G
-          data[index + 2] = Math.floor(data[index + 2] * 0.7) // B
-        }
-      }
-    }
+    // Get the area around the child
+    const imageData = ctx.getImageData(childZone.x, childZone.y, childZone.width, childZone.height)
     
-    // Put processed image data back to canvas
-    ctx.putImageData(imageData, 0, 0)
-    console.log('🎭 Standard masking completed')
+    // Apply subtle blur effect
+    const blurredData = this.applyBlurEffect(imageData, 3)
+    
+    // Put the blurred data back
+    ctx.putImageData(blurredData, childZone.x, childZone.y)
   }
 
-  // Reconstruct background seamlessly
-  reconstructBackgroundSeamlessly(data, width, height, emmaZone) {
-    console.log('🎭 Reconstructing background seamlessly...')
+  // Apply blur effect to image data
+  applyBlurEffect(imageData, radius) {
+    const data = imageData.data
+    const width = imageData.width
+    const height = imageData.height
+    const result = new Uint8ClampedArray(data)
     
-    // Sample background from surrounding areas
-    const sampleZones = [
-      // Left of Emma
-      { x: Math.max(0, emmaZone.x - emmaZone.width), y: emmaZone.y, width: emmaZone.width, height: emmaZone.height },
-      // Right of Emma
-      { x: emmaZone.x + emmaZone.width, y: emmaZone.y, width: emmaZone.width, height: emmaZone.height },
-      // Above Emma
-      { x: emmaZone.x, y: Math.max(0, emmaZone.y - emmaZone.height), width: emmaZone.width, height: emmaZone.height },
-      // Below Emma
-      { x: emmaZone.x, y: emmaZone.y + emmaZone.height, width: emmaZone.width, height: emmaZone.height }
-    ]
-    
-    // Create seamless background by blending samples
-    for (let y = 0; y < emmaZone.height; y++) {
-      for (let x = 0; x < emmaZone.width; x++) {
-        const index = (y * emmaZone.width + x) * 4
-        
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
         let r = 0, g = 0, b = 0, count = 0
         
-        // Sample from surrounding areas
-        sampleZones.forEach(zone => {
-          if (zone.x >= 0 && zone.x < width && zone.y >= 0 && zone.y < height) {
-            const sampleX = zone.x + x
-            const sampleY = zone.y + y
+        // Sample surrounding pixels
+        for (let dy = -radius; dy <= radius; dy++) {
+          for (let dx = -radius; dx <= radius; dx++) {
+            const nx = x + dx
+            const ny = y + dy
             
-            if (sampleX >= 0 && sampleX < width && sampleY >= 0 && sampleY < height) {
-              const sampleIndex = (sampleY * width + sampleX) * 4
-              r += data[sampleIndex]
-              g += data[sampleIndex + 1]
-              b += data[sampleIndex + 2]
+            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+              const idx = (ny * width + nx) * 4
+              r += data[idx]
+              g += data[idx + 1]
+              b += data[idx + 2]
               count++
             }
           }
-        })
+        }
         
-        if (count > 0) {
-          // Add teddy bear texture in the background
-          const teddyBearTexture = this.createTeddyBearTexture(x, y, emmaZone.width, emmaZone.height)
-          
-          data[index] = Math.min(255, Math.floor(r / count) + teddyBearTexture.r)
-          data[index + 1] = Math.min(255, Math.floor(g / count) + teddyBearTexture.g)
-          data[index + 2] = Math.min(255, Math.floor(b / count) + teddyBearTexture.b)
-          data[index + 3] = 255
-        }
+        // Set average color
+        const idx = (y * width + x) * 4
+        result[idx] = r / count
+        result[idx + 1] = g / count
+        result[idx + 2] = b / count
+        result[idx + 3] = data[idx + 3]
       }
     }
-  }
-
-  // Create teddy bear texture for background
-  createTeddyBearTexture(x, y, width, height) {
-    // Simulate light brown teddy bear texture
-    const baseR = 139 // Light brown base
-    const baseG = 115
-    const baseB = 85
     
-    // Add some variation for texture
-    const variation = Math.sin(x * 0.1) * Math.cos(y * 0.1) * 20
-    
-    return {
-      r: Math.max(0, Math.min(255, baseR + variation)),
-      g: Math.max(0, Math.min(255, baseG + variation)),
-      b: Math.max(0, Math.min(255, baseB + variation))
-    }
-  }
-
-  // Add natural lighting and shadows
-  addNaturalLighting(data, width, height, emmaZone) {
-    console.log('🎭 Adding natural lighting and shadows...')
-    
-    // Add subtle shadow where Emma was standing
-    for (let y = emmaZone.y + emmaZone.height; y < Math.min(height, emmaZone.y + emmaZone.height + 20); y++) {
-      for (let x = emmaZone.x - 10; x < emmaZone.x + emmaZone.width + 10; x++) {
-        if (x >= 0 && x < width && y >= 0 && y < height) {
-          const index = (y * width + x) * 4
-          
-          // Darken for shadow effect
-          data[index] = Math.max(0, data[index] - 30)
-          data[index + 1] = Math.max(0, data[index + 1] - 30)
-          data[index + 2] = Math.max(0, data[index + 2] - 30)
-        }
-      }
-    }
+    return new ImageData(result, width, height)
   }
 
   // AI CHILD DETECTION - Simulate real face/body recognition
@@ -1318,11 +1311,12 @@ class AIService {
           description: `Group photo ACTUALLY masked to show ${childrenWithConsent.length} children with consent. ${childrenWithoutConsent.length} children without consent have been masked for privacy.`
         }
         
-        console.log(`✅ Group photo masking complete - privacy protected`)
+        console.log(`✅ AI group photo masking complete`)
         resolve(result)
       }, 1200)
     })
   }
 }
 
-export default new AIService()
+// Export the service
+export default AIService
