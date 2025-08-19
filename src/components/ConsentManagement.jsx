@@ -130,7 +130,11 @@ const ConsentManagement = ({ photo, onClose, onSave, processingConsent }) => {
               Cancel
             </button>
             <button
-              onClick={handleSave}
+              onClick={() => {
+                console.log('ConsentManagement: Save button clicked!')
+                console.log('ConsentManagement: Button state - isProcessing:', isProcessing, 'processingConsent:', processingConsent)
+                handleSave()
+              }}
               disabled={isProcessing || processingConsent}
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
