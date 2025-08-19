@@ -13,7 +13,7 @@ class AIService {
     
     try {
       // Wait a bit for the DOM to be ready
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise(resolve => setTimeout(resolve, 200))
       
       // Get the photo element from the DOM - try multiple selectors
       let photoElement = document.querySelector(`[data-photo-id="${photoId}"] img`)
@@ -101,6 +101,15 @@ class AIService {
 
   // AI-POWERED CHILD DETECTION AND MASKING
   async createAIMaskedPhoto(photoElement, childName, maskingType) {
+    console.log('🎭 Starting AI masking process for:', childName)
+    console.log('Photo element details:', {
+      src: photoElement.src,
+      naturalWidth: photoElement.naturalWidth,
+      naturalHeight: photoElement.naturalHeight,
+      width: photoElement.width,
+      height: photoElement.height
+    })
+    
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
@@ -109,8 +118,11 @@ class AIService {
       canvas.width = photoElement.naturalWidth || photoElement.width
       canvas.height = photoElement.naturalHeight || photoElement.height
       
+      console.log('Canvas created with dimensions:', canvas.width, 'x', canvas.height)
+      
       // Draw the original photo
       ctx.drawImage(photoElement, 0, 0, canvas.width, canvas.height)
+      console.log('Original photo drawn to canvas')
       
       // AI CHILD DETECTION - Simulate real face/body recognition
       const detectedChildren = this.detectChildrenInPhoto(ctx, childName)
@@ -120,6 +132,7 @@ class AIService {
         
         // Apply targeted masking to detected children
         detectedChildren.forEach(child => {
+          console.log(`Applying masking to child: ${child.name} at zone:`, child.zone)
           this.applyTargetedChildMasking(ctx, canvas.width, canvas.height, child, maskingType)
         })
       } else {
@@ -129,11 +142,15 @@ class AIService {
       }
       
       // Convert to blob for storage
+      console.log('Converting canvas to blob...')
       canvas.toBlob((blob) => {
         if (blob) {
           const maskedUrl = URL.createObjectURL(blob)
+          console.log('Blob created successfully, size:', blob.size, 'bytes')
+          console.log('Masked URL created:', maskedUrl)
           resolve({ blob, url: maskedUrl, canvas })
         } else {
+          console.error('Failed to create blob from canvas')
           resolve(null)
         }
       }, 'image/jpeg', 0.9)
@@ -374,33 +391,40 @@ class AIService {
     
     const { x, y, width, height } = zone
     
-    // Step 1: Capture the area to the right of Emma for reference
-    const rightReferenceArea = ctx.getImageData(x + width, y, width * 0.5, height)
-    
-    // Step 2: Capture the area above Emma for background reference
-    const topReferenceArea = ctx.getImageData(x, y - height * 0.3, width, height * 0.3)
-    
-    // Step 3: Capture the area below Emma for mat reference
-    const bottomReferenceArea = ctx.getImageData(x, y + height, width, height * 0.2)
-    
-    // Step 4: Apply heavy blur to Emma's area to start removal
-    ctx.filter = 'blur(25px)'
-    ctx.drawImage(ctx.canvas, x, y, width, height, x, y, width, height)
-    ctx.filter = 'none'
-    
-    // Step 5: Reconstruct the background (teddy bear area)
-    this.reconstructTeddyBearBackground(ctx, zone)
-    
-    // Step 6: Reconstruct the foam mat
-    this.reconstructFoamMat(ctx, zone)
-    
-    // Step 7: Blend the edges seamlessly
-    this.blendEdgesSeamlessly(ctx, zone, rightReferenceArea)
-    
-    // Step 8: Add natural lighting and shadows
-    this.addNaturalLighting(ctx, zone)
-    
-    console.log('✅ Seamless Emma removal completed - she was never there!')
+    try {
+      // Step 1: Capture the area to the right of Emma for reference
+      const rightReferenceArea = ctx.getImageData(x + width, y, width * 0.5, height)
+      
+      // Step 2: Capture the area above Emma for background reference
+      const topReferenceArea = ctx.getImageData(x, y - height * 0.3, width, height * 0.3)
+      
+      // Step 3: Capture the area below Emma for mat reference
+      const bottomReferenceArea = ctx.getImageData(x, y + height, width, height * 0.2)
+      
+      // Step 4: Apply heavy blur to Emma's area to start removal
+      ctx.filter = 'blur(25px)'
+      ctx.drawImage(ctx.canvas, x, y, width, height, x, y, width, height)
+      ctx.filter = 'none'
+      
+      // Step 5: Reconstruct the background (teddy bear area)
+      this.reconstructTeddyBearBackground(ctx, zone)
+      
+      // Step 6: Reconstruct the foam mat
+      this.reconstructFoamMat(ctx, zone)
+      
+      // Step 7: Blend the edges seamlessly
+      this.blendEdgesSeamlessly(ctx, zone, rightReferenceArea)
+      
+      // Step 8: Add natural lighting and shadows
+      this.addNaturalLighting(ctx, zone)
+      
+      console.log('✅ Seamless Emma removal completed - she was never there!')
+      
+    } catch (error) {
+      console.error('Error in seamless Emma removal:', error)
+      // Fallback: apply simple masking if reconstruction fails
+      this.applyFallbackMasking(ctx, ctx.canvas.width, ctx.canvas.height, childName)
+    }
   }
 
   // SUBTLE AI REMOVAL - Most natural looking

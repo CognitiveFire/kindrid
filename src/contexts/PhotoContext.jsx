@@ -101,7 +101,7 @@ export const PhotoProvider = ({ children }) => {
       demoPhotoService.addPhoto(newPhoto)
       console.log('PhotoContext: Added photo to demo service')
       
-      // Update local state - force re-render
+      // Update local state IMMEDIATELY - force re-render
       setPhotos(prev => {
         const updated = [...prev, newPhoto]
         console.log('PhotoContext: Updating photos state, current count:', prev.length)
@@ -109,7 +109,7 @@ export const PhotoProvider = ({ children }) => {
         return updated
       })
       
-      // Update pending consent state - force re-render
+      // Update pending consent state IMMEDIATELY - force re-render
       setPendingConsent(prev => {
         const updated = [...prev, newPhoto]
         console.log('PhotoContext: Updating pending consent, current count:', prev.length)
@@ -117,8 +117,11 @@ export const PhotoProvider = ({ children }) => {
         return updated
       })
       
-      // Force a re-render by updating a timestamp
+      // Force multiple re-renders to ensure UI updates
       setLastUpdate(Date.now())
+      
+      // Wait a moment for state to settle
+      await new Promise(resolve => setTimeout(resolve, 100))
       
       // Start AI processing
       console.log('PhotoContext: Starting AI processing for photo:', newPhoto.id)
