@@ -429,7 +429,7 @@ const PhotoGallery = () => {
       {/* Enlarged Photo Modal */}
       {enlargedPhoto && (
         <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
-          <div className="relative max-w-[90vw] max-h-[90vh]">
+          <div className="relative max-w-[95vw] max-h-[95vh]">
             <button
               onClick={handleCloseEnlarged}
               className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
@@ -437,8 +437,12 @@ const PhotoGallery = () => {
               ✕
             </button>
             
-            <div className="relative">
-              {renderPhotoImage(enlargedPhoto)}
+            <div className="relative flex justify-center">
+              <img
+                src={enlargedPhoto.maskedUrl || enlargedPhoto.url}
+                alt={enlargedPhoto.title || 'Enlarged Photo'}
+                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+              />
               
               {/* AI Masked Badge */}
               {enlargedPhoto.maskedUrl && (
@@ -456,12 +460,8 @@ const PhotoGallery = () => {
             </div>
             
             <div className="text-center mt-4 text-white">
-              <p className="text-lg">
-                {enlargedPhoto.title || 'Untitled Photo'}
-              </p>
-              <p className="text-sm text-gray-300">
-                Click outside or press X to close
-              </p>
+              <p className="text-lg">{enlargedPhoto.title || 'Untitled Photo'}</p>
+              <p className="text-sm text-gray-300">Click outside or press X to close</p>
             </div>
           </div>
         </div>

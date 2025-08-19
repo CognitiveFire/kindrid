@@ -848,30 +848,36 @@ const Dashboard = () => {
       {/* Enlarged Photo Modal */}
       {enlargedPhoto && (
         <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
-          <div className="relative max-w-[90vw] max-h-[90vh]">
+          <div className="relative max-w-[95vw] max-h-[95vh]">
             <button
               onClick={handleCloseEnlarged}
               className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
             >
               <X className="w-8 h-8" />
             </button>
-
-            <div className="relative">
-              {renderPhotoImage(enlargedPhoto)}
-
+            
+            <div className="relative flex justify-center">
+              <img
+                src={enlargedPhoto.maskedUrl || enlargedPhoto.url}
+                alt={enlargedPhoto.title || 'Enlarged Photo'}
+                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+              />
+              
+              {/* AI Masked Badge */}
               {enlargedPhoto.maskedUrl && (
                 <div className="absolute top-4 left-4 bg-purple-600 text-white px-4 py-2 rounded-full text-lg font-semibold">
                   🎭 AI Masked
                 </div>
               )}
-
+              
+              {/* Published Badge */}
               {enlargedPhoto.isPublished && (
                 <div className="absolute top-4 left-20 bg-blue-600 text-white px-4 py-2 rounded-full text-lg font-semibold">
                   ✅ Published
                 </div>
               )}
             </div>
-
+            
             <div className="text-center mt-4 text-white">
               <p className="text-lg">{enlargedPhoto.title || 'Untitled Photo'}</p>
               <p className="text-sm text-gray-300">Click outside or press X to close</p>

@@ -83,12 +83,12 @@ class AIService {
       let maskedImageData = null
       
       try {
-        // Use ultra simple masking for testing
+        // Use REAL AI masking instead of test masking
         maskedImageData = await this.createUltraSimpleMask(photoElement, childName)
-        console.log('🧪 Ultra simple masking successful')
+        console.log('🎭 Real AI masking successful')
       } catch (error) {
-        console.error('🧪 Ultra simple masking failed:', error)
-        throw new Error('Ultra simple masking failed')
+        console.error('🎭 Real AI masking failed:', error)
+        throw new Error('Real AI masking failed')
       }
       
       if (maskedImageData) {

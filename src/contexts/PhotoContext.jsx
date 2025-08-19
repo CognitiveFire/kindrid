@@ -81,16 +81,16 @@ export const PhotoProvider = ({ children }) => {
       const newPhoto = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         title: photoData.title || 'Untitled Photo',
-        description: photoData.description || '',
-        location: photoData.location || '',
-        teacher: photoData.teacher || '',
-        date: photoData.date || new Date().toISOString(),
+        description: photoData.description || 'No description',
+        location: photoData.location || 'Unknown location',
+        teacher: photoData.teacher || 'Unknown teacher',
+        date: photoData.date || new Date().toISOString().split('T')[0],
         url: photoData.url,
         currentDisplayUrl: photoData.url,
         children: photoData.children || [],
         consentGiven: [],
         consentPending: photoData.children || [],
-        status: 'pending_consent',
+        status: 'pending_consent', // Changed from 'approved' to 'pending_consent'
         aiProcessed: false,
         uploadedAt: new Date().toISOString()
       }
