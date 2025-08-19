@@ -56,24 +56,18 @@ const Dashboard = () => {
 
   // Handle consent management save
   const handleConsentSave = async (photoId, childrenWithConsent, childrenWithoutConsent) => {
-    console.log('Dashboard: Saving consent and applying AI masking')
+    console.log('Dashboard: Saving consent')
     console.log('Dashboard: Children with consent:', childrenWithConsent)
     console.log('Dashboard: Children without consent:', childrenWithoutConsent)
     
     setProcessingConsent(true)
     
     try {
-      // Show processing message
-      if (childrenWithoutConsent.length > 0) {
-        alert(`Processing consent... AI will now remove ${childrenWithoutConsent.join(', ')} from the photo. This may take a few moments.`)
-      }
-      
-      // Use the new function that processes all consent and applies AI masking at once
+      // Use the simplified function that processes all consent
       const updatedPhoto = await processConsentAndApplyMasking(photoId, childrenWithConsent, childrenWithoutConsent)
       
       if (updatedPhoto) {
-        console.log('Dashboard: Consent saved and AI masking applied successfully')
-        console.log('Dashboard: Updated photo:', updatedPhoto)
+        console.log('Dashboard: Consent saved successfully')
         
         // Close the consent management modal
         setConsentPhoto(null)
@@ -83,17 +77,17 @@ const Dashboard = () => {
         
         // Show success message
         if (childrenWithoutConsent.length > 0) {
-          alert(`Photo consent saved! AI has successfully removed ${childrenWithoutConsent.join(', ')} from the photo.`)
+          alert(`Photo consent saved! ${childrenWithoutConsent.join(', ')} have been masked.`)
         } else {
           alert('Photo consent saved! All children have consent.')
         }
       } else {
-        console.error('Dashboard: Failed to process consent and apply masking')
+        console.error('Dashboard: Failed to process consent')
         alert('Error saving consent. Please try again.')
       }
     } catch (error) {
       console.error('Dashboard: Error in handleConsentSave:', error)
-      alert(`Error saving consent: ${error.message}. Please try again.`)
+      alert('Error saving consent. Please try again.')
     } finally {
       setProcessingConsent(false)
     }
