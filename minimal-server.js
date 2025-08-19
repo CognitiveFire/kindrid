@@ -9,9 +9,15 @@ console.log(`Port: ${PORT}`);
 console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`Express version: ${require('express/package.json').version}`);
 
-// Root path - respond immediately for health checks
+// Root path - serve the React app
 app.get('/', (req, res) => {
-  console.log('Root path requested (health check)');
+  console.log('Root path requested - serving React app');
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  console.log('Health check requested');
   res.status(200).send(`
     <!DOCTYPE html>
     <html>
@@ -27,17 +33,6 @@ app.get('/', (req, res) => {
     </body>
     </html>
   `);
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  console.log('Health check requested');
-  res.status(200).json({ 
-    status: 'ok', 
-    time: new Date().toISOString(),
-    port: PORT,
-    env: process.env.NODE_ENV || 'development'
-  });
 });
 
 // Test endpoint
