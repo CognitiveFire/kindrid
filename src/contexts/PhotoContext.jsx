@@ -84,7 +84,9 @@ export const PhotoProvider = ({ children }) => {
       // Create masked URL if children need masking
       let maskedUrl = null
       if (childrenWithoutConsent.length > 0) {
-        maskedUrl = `${currentPhoto.url}?masked=true&children=${childrenWithoutConsent.join(',')}`
+        // For prototype: create a simple masked URL that simulates AI processing
+        // In real implementation, this would be a link to the processed image
+        maskedUrl = `/api/photos/${photoId}/masked?children=${childrenWithoutConsent.join(',')}&timestamp=${Date.now()}`
         console.log('PhotoContext: Created masked URL:', maskedUrl)
       }
 

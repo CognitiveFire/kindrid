@@ -181,15 +181,15 @@ const Dashboard = () => {
       maskingInfo: photo.maskingInfo
     })
 
-    // Show masked photo only if AI processing is complete
-    let imageUrl = isAIProcessed ? photo.maskedUrl : photo.url || photo.currentDisplayUrl
+    // For prototype: always show original image, but add visual overlay for masked photos
+    let imageUrl = photo.url || photo.currentDisplayUrl
     
     console.log('Dashboard: Final imageUrl:', imageUrl)
     console.log('Dashboard: Image display decision:', {
       isAIProcessed,
       useMaskedUrl: isAIProcessed && photo.maskedUrl,
       fallbackUrl: photo.url || photo.currentDisplayUrl,
-      finalChoice: isAIProcessed ? 'maskedUrl' : 'originalUrl'
+      finalChoice: 'originalUrl (with overlay for masked)'
     })
 
     if (imageUrl) {
@@ -209,6 +209,23 @@ const Dashboard = () => {
           {isAIProcessed && (
             <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
               AI Processed ({maskedCount})
+            </div>
+          )}
+
+          {/* Masking Overlay for Prototype */}
+          {isAIProcessed && hasMaskedChildren && (
+            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+              <div className="bg-white bg-opacity-90 rounded-lg p-3 text-center">
+                <div className="text-sm font-semibold text-gray-800 mb-1">
+                  Photo Processed
+                </div>
+                <div className="text-xs text-gray-600">
+                  {maskedCount} child{maskedCount !== 1 ? 'ren' : ''} removed
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  (Prototype - shows original)
+                </div>
+              </div>
             </div>
           )}
 
