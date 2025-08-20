@@ -166,8 +166,8 @@ const Dashboard = () => {
     // FIXED: Children WITHOUT consent are the ones removed/masked
     const hasMaskedChildren = photo.consentPending?.length > 0
     const maskedCount = photo.consentPending?.length || 0
-    // Fix: aiProcessed should be a boolean, not a string
-    const isAIProcessed = Boolean(photo.aiProcessed) && Boolean(photo.maskedUrl)
+    // Simplified: just check if photo has been processed and has pending consent
+    const isAIProcessed = Boolean(photo.aiProcessed)
 
     // Debug image URL logic
     console.log('Dashboard: renderPhotoImage debug:', {
@@ -179,10 +179,11 @@ const Dashboard = () => {
       aiProcessed: photo.aiProcessed,
       aiProcessedType: typeof photo.aiProcessed,
       isAIProcessed: isAIProcessed,
-      maskingInfo: photo.maskingInfo
+      consentPending: photo.consentPending,
+      hasMaskedChildren: hasMaskedChildren
     })
 
-    // For prototype: show edited image when AI processed
+    // For prototype: show edited image when AI processed and has masked children
     let imageUrl = photo.url || photo.currentDisplayUrl
     let showEditedVersion = isAIProcessed && hasMaskedChildren
     

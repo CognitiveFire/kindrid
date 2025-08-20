@@ -14,7 +14,7 @@ const ConsentManagement = ({ photo, onClose, onSave, processingConsent }) => {
         initialStatus[child] = false // false = "Remove", true = "Visible"
       })
       setConsentStatus(initialStatus)
-      console.log('ConsentManagement: Initialized all children as "Remove":', initialStatus)
+      console.log('ConsentManagement: Initialized all children as "Consent Needed":', initialStatus)
     }
   }, [photo])
 
@@ -102,10 +102,10 @@ const ConsentManagement = ({ photo, onClose, onSave, processingConsent }) => {
                       className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                         consentStatus[child]
                           ? 'bg-green-500 text-white hover:bg-green-600'
-                          : 'bg-red-500 text-white hover:bg-red-600'
+                          : 'bg-yellow-500 text-white hover:bg-yellow-600'
                       }`}
                     >
-                      {consentStatus[child] ? 'Visible' : 'Remove'}
+                      {consentStatus[child] ? 'Permission Approved' : 'Consent Needed'}
                     </button>
                   </div>
                 </div>
@@ -116,12 +116,12 @@ const ConsentManagement = ({ photo, onClose, onSave, processingConsent }) => {
           {/* Instructions */}
           <div className="mb-6 p-4 bg-blue-50 rounded-lg">
             <p className="text-blue-800 text-sm">
-              <strong>Default State:</strong> All children start as "Remove" (no consent). You must explicitly approve each child you want to keep visible.
+              <strong>Default State:</strong> All children start as "Consent Needed" (no permission). You must explicitly approve each child you want to keep visible.
             </p>
             <p className="text-blue-800 text-sm mt-2">
-              <strong>How it works:</strong> Children marked as "Remove" will be completely removed from the photo 
+              <strong>How it works:</strong> Children marked as "Consent Needed" will be completely removed from the photo 
               using AI technology. The background will be reconstructed to look natural. 
-              Children marked as "Visible" will remain in the photo.
+              Children marked as "Permission Approved" will remain in the photo.
             </p>
           </div>
 

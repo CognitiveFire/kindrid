@@ -94,7 +94,7 @@ const PhotoGallery = () => {
   const renderPhotoImage = (photo) => {
     // Use same logic as Dashboard for consistency
     const hasMaskedChildren = photo.consentPending?.length > 0
-    const isAIProcessed = Boolean(photo.aiProcessed) && Boolean(photo.maskedUrl)
+    const isAIProcessed = Boolean(photo.aiProcessed)
     let showEditedVersion = isAIProcessed && hasMaskedChildren
     
     // If showing edited version, use the edited image
