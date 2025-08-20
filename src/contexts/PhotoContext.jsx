@@ -280,6 +280,18 @@ export const PhotoProvider = ({ children }) => {
     console.log('PhotoContext: Final masking count:', updatedPhoto.maskingInfo?.maskedChildren?.length || 0)
     console.log('PhotoContext: Final masked URL:', updatedPhoto.maskedUrl)
     
+    // Debug: Log the final updated photo object
+    console.log('PhotoContext: Final updated photo object:', {
+      id: updatedPhoto.id,
+      url: updatedPhoto.url,
+      currentDisplayUrl: updatedPhoto.currentDisplayUrl,
+      consentGiven: updatedPhoto.consentGiven,
+      consentPending: updatedPhoto.consentPending,
+      status: updatedPhoto.status,
+      aiProcessed: updatedPhoto.aiProcessed,
+      maskedUrl: updatedPhoto.maskedUrl
+    })
+    
     // Return the updated photo so Dashboard can use it immediately
     return updatedPhoto
   }

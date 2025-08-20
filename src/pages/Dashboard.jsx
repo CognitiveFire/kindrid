@@ -287,8 +287,22 @@ const Dashboard = () => {
     const maskedCount = photo.maskingInfo?.maskedChildren?.length || 0
     const isAIProcessed = photo.aiProcessed && photo.maskedUrl
 
+    // Debug image URL logic
+    console.log('Dashboard: renderPhotoImage debug:', {
+      photoId: photo.id,
+      title: photo.title,
+      url: photo.url,
+      currentDisplayUrl: photo.currentDisplayUrl,
+      maskedUrl: photo.maskedUrl,
+      aiProcessed: photo.aiProcessed,
+      isAIProcessed: isAIProcessed,
+      maskingInfo: photo.maskingInfo
+    })
+
     // Show masked photo only if AI processing is complete
     let imageUrl = isAIProcessed ? photo.maskedUrl : photo.url || photo.currentDisplayUrl
+    
+    console.log('Dashboard: Final imageUrl:', imageUrl)
 
     if (imageUrl) {
       // data URL
