@@ -45,8 +45,11 @@ app.get('/test', (req, res) => {
   });
 });
 
-// Serve static files
+// Serve static files from dist directory
 app.use(express.static(path.join(__dirname, 'dist')));
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Catch-all route for SPA
 app.get('*', (req, res) => {
