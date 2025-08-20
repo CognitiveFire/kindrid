@@ -114,18 +114,25 @@ export const PhotoProvider = ({ children }) => {
       }
 
       console.log('PhotoContext: Updated photo:', updatedPhoto)
+      console.log('PhotoContext: Photo has editedImageUrl:', updatedPhoto.editedImageUrl)
 
       // Update in service
-      demoPhotoService.updatePhoto(photoId, updatedPhoto)
+      const savedPhoto = demoPhotoService.updatePhoto(photoId, updatedPhoto)
+      console.log('PhotoContext: Service returned saved photo:', savedPhoto)
+      console.log('PhotoContext: Saved photo has editedImageUrl:', savedPhoto?.editedImageUrl)
 
       // Update local state
-      setPhotos(prev => prev.map(p => p.id === photoId ? updatedPhoto : p))
+      setPhotos(prev => {
+        const newPhotos = prev.map(p => p.id === photoId ? savedPhoto : p)
+        console.log('PhotoContext: Updated photos state:', newPhotos.find(p => p.id === photoId))
+        return newPhotos
+      })
 
       // Remove from pending consent
       setPendingConsent(prev => prev.filter(p => p.id !== photoId))
 
       console.log('PhotoContext: Consent processing completed')
-      return updatedPhoto
+      return savedPhoto
     } catch (error) {
       console.error('PhotoContext: Error processing consent:', error)
       throw error

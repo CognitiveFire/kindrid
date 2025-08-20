@@ -176,12 +176,18 @@ const Dashboard = () => {
       url: photo.url,
       currentDisplayUrl: photo.currentDisplayUrl,
       maskedUrl: photo.maskedUrl,
+      editedImageUrl: photo.editedImageUrl,
       aiProcessed: photo.aiProcessed,
       aiProcessedType: typeof photo.aiProcessed,
       isAIProcessed: isAIProcessed,
       consentPending: photo.consentPending,
       hasMaskedChildren: hasMaskedChildren
     })
+    
+    // Debug: Check if photo object has the editedImageUrl field
+    console.log('Dashboard: Photo object keys:', Object.keys(photo))
+    console.log('Dashboard: Photo editedImageUrl value:', photo.editedImageUrl)
+    console.log('Dashboard: Photo maskedUrl value:', photo.maskedUrl)
 
     // For prototype: show edited image when AI processed and has masked children
     let imageUrl = photo.url || photo.currentDisplayUrl
