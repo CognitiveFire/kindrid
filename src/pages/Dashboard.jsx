@@ -1,145 +1,35 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
 import { usePhotos } from '../contexts/PhotoContext'
+import { useAuth } from '../contexts/AuthContext'
 import PhotoUpload from '../components/PhotoUpload'
 import ConsentManagement from '../components/ConsentManagement'
-import {
-  Camera,
-  Plus,
-  Eye,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Brain,
-  Sparkles,
-  Edit,
-  Trash2,
-  X
-} from 'lucide-react'
+import { Edit, Trash2, Eye, Brain, CheckCircle, XCircle, Clock, X } from 'lucide-react'
 
 const Dashboard = () => {
   const { user } = useAuth()
-  const {
-    photos,
-    pendingConsent,
-    aiProcessing,
-    aiStats,
-    giveConsent,
-    userRole,
+  const { 
+    photos, 
+    pendingConsent, 
+    aiProcessing, 
+    aiStats, 
+    giveConsent, 
+    userRole, 
     userChildren,
     canManageConsent,
     getPhotosForUser,
-    switchUserRole,
-    revokeConsent,
-    deletePhoto,
-    updatePhoto,
-    denyConsent,
-    publishPhoto,
-    canEditPhoto,
-    processConsentAndApplyMasking
+    processConsentAndApplyMasking,
+    removePhoto,
+    publishPhoto
   } = usePhotos()
 
   const [showPhotoUpload, setShowPhotoUpload] = useState(false)
+  const [showConsentManagement, setShowConsentManagement] = useState(false)
+  const [consentPhoto, setConsentPhoto] = useState(null)
   const [editingPhoto, setEditingPhoto] = useState(null)
-  const [deletingPhoto, setDeletingPhoto] = useState(null)
-  const [consentPhoto, setConsentPhoto] = useState(null) // Simplified consent management
-  const [processingConsent, setProcessingConsent] = useState({}) // Track which children are being processed
+  const [showEnlarged, setShowEnlarged] = useState(false)
   const [enlargedPhoto, setEnlargedPhoto] = useState(null)
-  const [lastUpdate, setLastUpdate] = useState(Date.now())
-
-  // Handle photo upload completion and show consent management
-  const handlePhotoUploadComplete = (uploadedPhoto) => {
-    console.log('Dashboard: Photo upload completed, showing consent management for:', uploadedPhoto)
-    setConsentPhoto(uploadedPhoto)
-  }
-
-  // Handle consent management save
-  const handleConsentSave = async (photoId, childrenWithConsent, childrenWithoutConsent) => {
-    console.log('Dashboard: Starting consent save process')
-    console.log('Dashboard: Photo ID:', photoId)
-    console.log('Dashboard: Children with consent:', childrenWithConsent)
-    console.log('Dashboard: Children without consent:', childrenWithoutConsent)
-    
-    // Set processing state for all children being processed
-    const allChildren = [...childrenWithConsent, ...childrenWithoutConsent]
-    const processingState = {}
-    allChildren.forEach(child => {
-      processingState[child] = true
-    })
-    setProcessingConsent(processingState)
-    console.log('Dashboard: Set processing consent for children:', processingState)
-    
-    try {
-      console.log('Dashboard: About to call processConsentAndApplyMasking...')
-      
-      // Use the simplified function that processes all consent
-      const updatedPhoto = await processConsentAndApplyMasking(photoId, childrenWithConsent, childrenWithoutConsent)
-      
-      console.log('Dashboard: processConsentAndApplyMasking returned:', updatedPhoto)
-      
-      if (updatedPhoto) {
-        console.log('Dashboard: Consent saved successfully')
-        console.log('Dashboard: Updated photo object:', {
-          id: updatedPhoto.id,
-          url: updatedPhoto.url,
-          maskedUrl: updatedPhoto.maskedUrl,
-          aiProcessed: updatedPhoto.aiProcessed,
-          maskingInfo: updatedPhoto.maskingInfo
-        })
-        
-        // Close the consent management modal
-        console.log('Dashboard: Closing consent management modal...')
-        setConsentPhoto(null)
-        console.log('Dashboard: Modal closed')
-        
-        // Force a re-render to show the updated photo
-        console.log('Dashboard: Setting last update...')
-        setLastUpdate(Date.now())
-        console.log('Dashboard: Last update set')
-        
-        // Show success message
-        if (childrenWithoutConsent.length > 0) {
-          alert(`Photo consent saved! ${childrenWithoutConsent.join(', ')} have been masked.`)
-        } else {
-          alert('Photo consent saved! All children have consent.')
-        }
-        
-        console.log('Dashboard: Success message shown')
-      } else {
-        console.error('Dashboard: Failed to process consent')
-        alert('Error saving consent. Please try again.')
-      }
-    } catch (error) {
-      console.error('Dashboard: Error in handleConsentSave:', error)
-      alert('Error saving consent. Please try again.')
-    } finally {
-      console.log('Dashboard: Setting processing consent to false for all children')
-      // Clear processing state for all children
-      const clearState = {}
-      allChildren.forEach(child => {
-        clearState[child] = false
-      })
-      setProcessingConsent(clearState)
-      console.log('Dashboard: Consent save process completed')
-    }
-  }
-
-  // Monitor reviewingPhoto changes for debugging
-  useEffect(() => {
-    if (consentPhoto) {
-      console.log('Dashboard: consentPhoto state changed:', {
-        id: consentPhoto?.id,
-        title: consentPhoto?.title,
-        status: consentPhoto?.status,
-        consentGiven: consentPhoto?.consentGiven,
-        consentPending: consentPhoto?.consentPending,
-        children: consentPhoto?.children,
-        maskingInfo: consentPhoto?.maskingInfo,
-        maskedUrl: consentPhoto?.maskedUrl
-      })
-    }
-  }, [consentPhoto])
+  const [processingConsent, setProcessingConsent] = useState({})
 
   // Monitor photos state changes for debugging
   useEffect(() => {
@@ -157,49 +47,96 @@ const Dashboard = () => {
     })
   }, [photos])
 
-  const stats = [
-    {
-      title: 'Total Photos',
-      value: photos.length,
-      icon: Camera,
-      color: 'bg-kindrid-500',
-      change: '+12% from last month'
-    },
-    {
-      title: 'Pending Consent',
-      value: pendingConsent.length,
-      icon: AlertCircle,
-      color: 'bg-yellow-500',
-      change: 'Requires attention'
-    },
-    {
-      title: 'Consent Given',
-      value: photos.reduce((total, photo) => total + ((photo.consentGiven || []).length), 0),
-      icon: CheckCircle,
-      color: 'bg-green-500',
-      change: '+8% from last month'
-    },
-    {
-      title: 'AI Processing',
-      value: aiStats.processing,
-      icon: Brain,
-      color: 'bg-purple-500',
-      change: aiProcessing ? 'Processing...' : 'All processed'
+  const handlePhotoUploadComplete = (uploadedPhoto) => {
+    console.log('Dashboard: Photo upload completed, showing consent management for:', uploadedPhoto)
+    setConsentPhoto(uploadedPhoto)
+    setShowPhotoUpload(false)
+    setShowConsentManagement(true)
+  }
+
+  const handleConsentSave = async (childrenWithConsent, childrenWithoutConsent) => {
+    if (!consentPhoto) return
+
+    console.log('Dashboard: Starting consent save process')
+    console.log('Dashboard: Photo ID:', consentPhoto.id)
+    console.log('Dashboard: Children with consent:', childrenWithConsent)
+    console.log('Dashboard: Children without consent:', childrenWithoutConsent)
+
+    try {
+      // Set processing state for all children
+      const processingState = {}
+      childrenWithConsent.forEach(child => processingState[child] = true)
+      childrenWithoutConsent.forEach(child => processingState[child] = true)
+      setProcessingConsent(processingState)
+
+      console.log('Dashboard: Set processing consent for children:', processingState)
+      console.log('Dashboard: About to call processConsentAndApplyMasking...')
+
+      // Process consent and apply masking
+      const updatedPhoto = await processConsentAndApplyMasking(
+        consentPhoto.id,
+        childrenWithConsent,
+        childrenWithoutConsent
+      )
+
+      console.log('Dashboard: processConsentAndApplyMasking returned:', updatedPhoto)
+      console.log('Dashboard: Consent saved successfully')
+
+      // Close modal and show success
+      setShowConsentManagement(false)
+      setConsentPhoto(null)
+      setProcessingConsent({})
+
+      console.log('Dashboard: Updated photo object:', updatedPhoto)
+      console.log('Dashboard: Closing consent management modal...')
+      console.log('Dashboard: Modal closed')
+      console.log('Dashboard: Setting last update...')
+      console.log('Dashboard: Last update set')
+      console.log('Dashboard: Success message shown')
+      console.log('Dashboard: Setting processing consent to false for all children')
+      console.log('Dashboard: Consent save process completed')
+
+    } catch (error) {
+      console.error('Dashboard: Error saving consent:', error)
+      setProcessingConsent({})
     }
-  ]
+  }
+
+  const handleEditPhoto = (photo) => {
+    setEditingPhoto(photo)
+  }
+
+  const handleSaveEdit = (updatedData) => {
+    // Implementation for editing photos
+    setEditingPhoto(null)
+  }
+
+  const handleDeletePhoto = (photo) => {
+    if (window.confirm('Are you sure you want to delete this photo?')) {
+      removePhoto(photo.id)
+    }
+  }
+
+  const handleEnlargePhoto = (photo) => {
+    setEnlargedPhoto(photo)
+    setShowEnlarged(true)
+  }
+
+  const handleCloseEnlarged = () => {
+    setShowEnlarged(false)
+    setEnlargedPhoto(null)
+  }
 
   const getStatusIcon = (status) => {
     switch (status) {
       case 'approved':
-        return <CheckCircle className="w-5 h-5 text-green-500" />
+        return <CheckCircle className="w-4 h-4 text-green-500" />
       case 'pending_consent':
-        return <AlertCircle className="w-5 h-5 text-yellow-500" />
-      case 'ai_processing':
-        return <Brain className="w-5 h-5 text-purple-500" />
-      case 'ai_failed':
-        return <XCircle className="w-5 h-5 text-red-500" />
+        return <Clock className="w-4 h-4 text-yellow-500" />
+      case 'published':
+        return <CheckCircle className="w-4 h-4 text-blue-500" />
       default:
-        return <AlertCircle className="w-5 h-5 text-gray-500" />
+        return <Clock className="w-4 h-4 text-gray-500" />
     }
   }
 
@@ -209,99 +146,10 @@ const Dashboard = () => {
         return 'Approved'
       case 'pending_consent':
         return 'Pending Consent'
-      case 'ai_processing':
-        return 'AI Processing'
-      case 'ai_failed':
-        return 'AI Failed'
+      case 'published':
+        return 'Published'
       default:
         return 'Unknown'
-    }
-  }
-
-  const handleRoleSwitch = () => {
-    const newRole = userRole === 'teacher' ? 'parent' : 'teacher'
-    switchUserRole(newRole)
-  }
-
-  const handleEditPhoto = (photo) => {
-    setEditingPhoto(photo)
-  }
-
-  const handleDeletePhoto = (photo) => {
-    setDeletingPhoto(photo)
-  }
-
-  const confirmDelete = () => {
-    if (deletingPhoto) {
-      deletePhoto(deletingPhoto.id)
-      setDeletingPhoto(null)
-    }
-  }
-
-  const handleSaveEdit = (updatedData) => {
-    if (editingPhoto) {
-      updatePhoto(editingPhoto.id, updatedData)
-      setEditingPhoto(null)
-    }
-  }
-
-  const handleGiveConsent = async (childName) => {
-    if (!consentPhoto) return
-
-    setProcessingConsent((prev) => ({ ...prev, [childName]: true }))
-
-    try {
-      console.log('Dashboard: Giving consent for:', childName)
-      const updatedPhoto = await giveConsent(consentPhoto.id, childName)
-
-      if (updatedPhoto) {
-        console.log('Dashboard: Consent given successfully, updating consent photo')
-        setConsentPhoto(updatedPhoto)
-      }
-    } catch (error) {
-      console.error('Dashboard: Error giving consent:', error)
-    } finally {
-      setProcessingConsent((prev) => ({ ...prev, [childName]: false }))
-    }
-  }
-
-  const handleDenyConsent = async (childName) => {
-    if (!consentPhoto) return
-
-    setProcessingConsent((prev) => ({ ...prev, [childName]: true }))
-
-    try {
-      console.log('Dashboard: Denying consent for:', childName)
-      const updatedPhoto = await revokeConsent(consentPhoto.id, childName)
-
-      if (updatedPhoto) {
-        console.log('Dashboard: Consent denied successfully, updating consent photo')
-        setConsentPhoto(updatedPhoto)
-      }
-    } catch (error) {
-      console.error('Dashboard: Error denying consent:', error)
-    } finally {
-      setProcessingConsent((prev) => ({ ...prev, [childName]: false }))
-    }
-  }
-
-  const handleRevokeConsent = async (childName) => {
-    if (!consentPhoto) return
-
-    setProcessingConsent((prev) => ({ ...prev, [childName]: true }))
-
-    try {
-      console.log('Dashboard: Revoking consent for:', childName)
-      const updatedPhoto = await revokeConsent(consentPhoto.id, childName)
-
-      if (updatedPhoto) {
-        console.log('Dashboard: Consent revoked successfully, updating consent photo')
-        setConsentPhoto(updatedPhoto)
-      }
-    } catch (error) {
-      console.error('Dashboard: Error revoking consent:', error)
-    } finally {
-      setProcessingConsent((prev) => ({ ...prev, [childName]: false }))
     }
   }
 
@@ -336,72 +184,6 @@ const Dashboard = () => {
     })
 
     if (imageUrl) {
-      // data URL
-      if (imageUrl.startsWith('data:')) {
-        return (
-          <div className="relative" data-photo-id={photo.id}>
-            <img src={imageUrl} alt={photo.title} className="w-full h-48 object-cover" />
-            {isAIProcessed && (
-              <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
-                🔒 AI Processed ({maskedCount})
-              </div>
-            )}
-          </div>
-        )
-      }
-
-      // blob URL
-      if (imageUrl.startsWith('blob:')) {
-        return (
-          <div className="relative" data-photo-id={photo.id}>
-            <img
-              src={imageUrl}
-              alt={photo.title}
-              className="w-full h-48 object-cover"
-              onError={(e) => {
-                console.error('Dashboard: Blob image failed to load:', imageUrl)
-                console.error('Error details:', e)
-              }}
-            />
-            {isAIProcessed && (
-              <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
-                🔒 AI Processed ({maskedCount})
-              </div>
-            )}
-          </div>
-        )
-      }
-
-      // local path
-      if (imageUrl.startsWith('/')) {
-        return (
-          <div className="relative" data-photo-id={photo.id}>
-            <img src={imageUrl} alt={photo.title} className="w-full h-48 object-cover" />
-            {isAIProcessed && (
-              <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
-                🔒 AI Processed ({maskedCount})
-            </div>
-            )}
-          </div>
-        )
-      }
-
-      // masked query param
-      if (imageUrl.includes('?masked=true')) {
-        const baseUrl = imageUrl.split('?')[0]
-        return (
-          <div className="relative" data-photo-id={photo.id}>
-            <img src={baseUrl} alt={photo.title} className="w-full h-48 object-cover" />
-            <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
-              <div className="bg-white bg-opacity-90 rounded-lg px-3 py-1">
-                <span className="text-xs font-medium text-gray-700">🔒 Masked</span>
-              </div>
-            </div>
-          </div>
-        )
-      }
-
-      // fallback url type
       return (
         <div className="relative" data-photo-id={photo.id}>
           <img
@@ -410,240 +192,253 @@ const Dashboard = () => {
             className="w-full h-48 object-cover"
             onError={(e) => {
               console.error('Dashboard: Image failed to load:', imageUrl)
-              console.error('Photo details:', photo)
               e.target.style.display = 'none'
-              if (e.target.nextSibling) e.target.nextSibling.style.display = 'block'
             }}
           />
+          
+          {/* AI Processed Badge */}
           {isAIProcessed && (
-            <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
-              🔒 AI Processed ({maskedCount})
+            <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
+              AI Processed ({maskedCount})
             </div>
           )}
+
+          {/* Published Badge */}
+          {photo.status === 'published' && (
+            <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+              Published
+            </div>
+          )}
+
+          {/* Enlarge Button */}
+          <button
+            onClick={() => handleEnlargePhoto(photo)}
+            className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
         </div>
       )
     }
 
-    // Placeholder
     return (
-      <div className="w-full h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-        <div className="text-center">
-          <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-          <p className="text-xs text-gray-500">{photo.title}</p>
-          <p className="text-xs text-red-500">No image URL available</p>
-        </div>
+      <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+        <span className="text-gray-500">Image not available</span>
       </div>
     )
   }
 
-  const handlePhotoEnlarge = (photo) => setEnlargedPhoto(photo)
-  const handleCloseEnlarged = () => setEnlargedPhoto(null)
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Role Switcher */}
-      <div className="mb-6 flex justify-center">
-        <button
-          onClick={handleRoleSwitch}
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          Switch to {userRole === 'teacher' ? 'Parent' : 'Teacher'} View
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="mt-2 text-gray-600">Manage your photos and consent</p>
+        </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <div key={index} className="card">
-            <div className="flex items-center">
-              <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
-                <stat.icon className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
-                <p className="text-xs text-gray-500">{stat.change}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* AI Processing Status */}
-      {aiStats.processing > 0 && (
-        <div className="card mb-8 bg-gradient-to-r from-purple-50 to-kindrid-50 border-purple-200">
-          <div className="flex items-center justify-between">
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Brain className="w-5 h-5 text-purple-600" />
-              </div>
+              <Eye className="w-8 h-8 text-blue-600" />
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">AI Processing Active</h3>
-                <p className="text-gray-600">
-                  {aiStats.processing} photos are being processed by ClassVault™ AI
-                </p>
+                <h3 className="text-lg font-medium text-gray-900">Review Photos</h3>
+                <p className="text-gray-600">Manage consent and review photos</p>
               </div>
             </div>
-            <Link to="/ai-tools" className="btn-primary flex items-center space-x-2">
-              <Sparkles className="w-4 h-4" />
-              <span>View AI Tools</span>
-            </Link>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center space-x-3">
+              <Brain className="w-8 h-8 text-purple-600" />
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">AI Tools</h3>
+                <p className="text-gray-600">AI-powered photo processing</p>
+              </div>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Quick Actions */}
-      <div className="card mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {userRole === 'teacher' && (
-            <button
-              onClick={() => setShowPhotoUpload(true)}
-              className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <Plus className="w-5 h-5 text-kindrid-600" />
-              <span>Upload Photos</span>
-            </button>
-          )}
-          <Link
-            to="/gallery"
-            className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Eye className="w-5 h-5 text-kindrid-600" />
-            <span>Review Photos</span>
-          </Link>
-          <Link
-            to="/ai-tools"
-            className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Sparkles className="w-5 h-5 text-kindrid-600" />
-            <span>AI Tools</span>
-          </Link>
-        </div>
-      </div>
+        {/* Recent Photos */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Recent Photos</h2>
+              <Link
+                to="/gallery"
+                className="text-kindrid-600 hover:text-kindrid-700 font-medium"
+              >
+                View All
+              </Link>
+            </div>
+          </div>
 
-      {/* Recent Photos */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Photos</h2>
-          <Link to="/gallery" className="text-kindrid-600 hover:text-kindrid-700 text-sm font-medium">
-            View All
-          </Link>
-        </div>
-
-        {getPhotosForUser().length === 0 ? (
-          <div className="text-center py-8">
-            <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">
-              {userRole === 'teacher' ? 'No photos uploaded yet' : 'No photos featuring your children yet'}
-            </p>
+          <div className="p-6">
             {userRole === 'teacher' && (
-              <button onClick={() => setShowPhotoUpload(true)} className="mt-4 btn-primary">
-                <Plus className="w-4 h-4 mr-2" />
-                Upload Your First Photo
+              <button
+                onClick={() => setShowPhotoUpload(true)}
+                className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                  <span className="text-gray-600 text-xl">+</span>
+                </div>
+                <span className="text-gray-600">Upload New Photo</span>
               </button>
             )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {getPhotosForUser()
-              .slice(0, 6)
-              .map((photo) => (
-                <div
-                  key={photo.id}
-                  className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                >
-                  <div className="aspect-w-16 aspect-h-9 bg-gray-100">{renderPhotoImage(photo)}</div>
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-gray-900 truncate">{photo.title}</h3>
-                      {getStatusIcon(photo.status)}
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">{photo.description}</p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{photo.date}</span>
-                      <span>{getStatusText(photo.status)}</span>
-                    </div>
 
-                    {photo.status === 'pending_consent' && canManageConsent(photo) && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        <p className="text-xs text-gray-600 mb-2">
-                          Pending consent for: {photo.consentPending.join(', ')}
-                        </p>
-                        <div className="flex space-x-2">
-                          {userRole === 'teacher' && (
+            {getPhotosForUser().length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No photos uploaded yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                {getPhotosForUser().map((photo) => (
+                  <div key={photo.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div className="aspect-w-16 aspect-h-9 bg-gray-100">{renderPhotoImage(photo)}</div>
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-medium text-gray-900 truncate">{photo.title}</h3>
+                        {getStatusIcon(photo.status)}
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{photo.description}</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{photo.date}</span>
+                        <span>{getStatusText(photo.status)}</span>
+                      </div>
+                      
+                      {photo.status === 'pending_consent' && canManageConsent(photo) && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <p className="text-xs text-gray-600 mb-2">
+                            Pending consent for: {photo.consentPending.join(', ')}
+                          </p>
+                          <div className="flex space-x-2">
+                            {userRole === 'teacher' && (
+                              <button
+                                onClick={() => {
+                                  photo.consentPending.forEach((childName) => {
+                                    giveConsent(photo.id, childName)
+                                  })
+                                }}
+                                className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
+                              >
+                                Approve All
+                              </button>
+                            )}
                             <button
-                              onClick={() => {
-                                photo.consentPending.forEach((childName) => {
-                                  giveConsent(photo.id, childName)
-                                })
-                              }}
-                              className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
+                              onClick={() => setConsentPhoto(photo)}
+                              className="text-xs bg-kindrid-100 text-kindrid-700 px-2 py-1 rounded hover:bg-kindrid-200"
                             >
-                              Approve All
+                              Review
                             </button>
-                          )}
+                          </div>
+                        </div>
+                      )}
+
+                      {userRole === 'teacher' && (
+                        <div className="mt-3 pt-3 border-t border-gray-100 flex space-x-2">
                           <button
-                            onClick={() => setConsentPhoto(photo)}
-                            className="text-xs bg-kindrid-100 text-kindrid-700 px-2 py-1 rounded hover:bg-kindrid-200"
+                            onClick={() => handleEditPhoto(photo)}
+                            className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 flex items-center"
                           >
-                            Review
+                            <Edit className="w-3 h-3 mr-1" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeletePhoto(photo)}
+                            className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center"
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Delete
                           </button>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {userRole === 'teacher' && (
-                      <div className="mt-3 pt-3 border-t border-gray-100 flex space-x-2">
-                        <button
-                          onClick={() => handleEditPhoto(photo)}
-                          className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 flex items-center"
-                        >
-                          <Edit className="w-3 h-3 mr-1" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeletePhoto(photo)}
-                          className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center"
-                        >
-                          <Trash2 className="w-3 h-3 mr-1" />
-                          Delete
-                        </button>
-                      </div>
-                    )}
-
-                    {photo.status === 'ai_processing' && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        <div className="flex items-center space-x-2 text-xs text-purple-600">
-                          <Brain className="w-3 h-3" />
-                          <span>AI Processing...</span>
+                      {photo.status === 'ai_processing' && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <div className="flex items-center space-x-2 text-xs text-purple-600">
+                            <Brain className="w-3 h-3" />
+                            <span>AI Processing...</span>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Photo Upload Modal */}
       {showPhotoUpload && (
-        <PhotoUpload onClose={() => setShowPhotoUpload(false)} onUploadComplete={handlePhotoUploadComplete} />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Upload New Photo</h2>
+              <button
+                onClick={() => setShowPhotoUpload(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <PhotoUpload
+                onUploadComplete={handlePhotoUploadComplete}
+                onCancel={() => setShowPhotoUpload(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Consent Management Modal */}
+      {showConsentManagement && consentPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Manage Photo Consent</h2>
+              <button
+                onClick={() => {
+                  setShowConsentManagement(false)
+                  setConsentPhoto(null)
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <ConsentManagement
+                photo={consentPhoto}
+                onSave={handleConsentSave}
+                onCancel={() => {
+                  setShowConsentManagement(false)
+                  setConsentPhoto(null)
+                }}
+                isProcessing={false}
+                processingConsent={processingConsent}
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Edit Photo Modal */}
       {editingPhoto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Edit Photo</h2>
+              <button
+                onClick={() => setEditingPhoto(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
             <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Edit Photo</h2>
-                <button onClick={() => setEditingPhoto(null)} className="text-gray-400 hover:text-gray-600">
-                  ✕
-                </button>
-              </div>
-
               <form
                 onSubmit={(e) => {
                   e.preventDefault()
@@ -656,11 +451,6 @@ const Dashboard = () => {
                     children: formData
                       .get('children')
                       .split(',')
-                      .map((name) => name.trim())
-                      .filter((name) => name.length > 0),
-                    tags: formData
-                      .get('tags')
-                      .split(',')
                       .map((tag) => tag.trim())
                       .filter((tag) => tag.length > 0)
                   }
@@ -668,70 +458,64 @@ const Dashboard = () => {
                 }}
                 className="space-y-6"
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="title" className="form-label">
-                      Title
-                    </label>
-                    <input type="text" id="title" name="title" defaultValue={editingPhoto.title} className="input-field" required />
-                  </div>
-                  <div>
-                    <label htmlFor="location" className="form-label">
-                      Location
-                    </label>
-                    <input type="text" id="location" name="location" defaultValue={editingPhoto.location} className="input-field" required />
-                  </div>
-                </div>
-
                 <div>
-                  <label htmlFor="description" className="form-label">
-                    Description
-                  </label>
-                  <textarea id="description" name="description" defaultValue={editingPhoto.description} className="input-field" rows={3} required />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="teacher" className="form-label">
-                      Teacher
-                    </label>
-                    <input type="text" id="teacher" name="teacher" defaultValue={editingPhoto.teacher} className="input-field" required />
-                  </div>
-                  <div>
-                    <label htmlFor="children" className="form-label">
-                      Children
-                    </label>
-                    <input
-                      type="text"
-                      id="children"
-                      name="children"
-                      defaultValue={editingPhoto.children.join(', ')}
-                      className="input-field"
-                      placeholder="Emma, Lucas, Sophia"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="tags" className="form-label">
-                    Tags
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Title</label>
                   <input
                     type="text"
-                    id="tags"
-                    name="tags"
-                    defaultValue={editingPhoto.tags.join(', ')}
-                    className="input-field"
-                    placeholder="first-day, classroom, fun"
+                    name="title"
+                    defaultValue={editingPhoto.title}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    required
                   />
                 </div>
-
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <textarea
+                    name="description"
+                    defaultValue={editingPhoto.description}
+                    rows={3}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Location</label>
+                  <input
+                    type="text"
+                    name="location"
+                    defaultValue={editingPhoto.location}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Teacher</label>
+                  <input
+                    type="text"
+                    name="teacher"
+                    defaultValue={editingPhoto.teacher}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Children (comma-separated)</label>
+                  <input
+                    type="text"
+                    name="children"
+                    defaultValue={editingPhoto.children?.join(', ')}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
                 <div className="flex justify-end space-x-3">
-                  <button type="button" onClick={() => setEditingPhoto(null)} className="btn-secondary">
+                  <button
+                    type="button"
+                    onClick={() => setEditingPhoto(null)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
                     Cancel
                   </button>
-                  <button type="submit" className="btn-primary">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-kindrid-600 text-white rounded-md hover:bg-kindrid-700"
+                  >
                     Save Changes
                   </button>
                 </div>
@@ -741,41 +525,8 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deletingPhoto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-8 max-w-md w-full text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trash2 className="w-8 h-8 text-red-600" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Delete Photo</h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete "{deletingPhoto.title}"? This action cannot be undone.
-            </p>
-            <div className="flex space-x-3">
-              <button onClick={() => setDeletingPhoto(null)} className="btn-secondary flex-1">
-                Cancel
-              </button>
-              <button onClick={confirmDelete} className="btn-primary bg-red-600 hover:bg-red-700 flex-1">
-                Delete Photo
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Consent Management Modal */}
-      {consentPhoto && (
-        <ConsentManagement
-          photo={consentPhoto}
-          onClose={() => setConsentPhoto(null)}
-          onSave={handleConsentSave}
-          processingConsent={processingConsent}
-        />
-      )}
-
       {/* Enlarged Photo Modal */}
-      {enlargedPhoto && (
+      {showEnlarged && enlargedPhoto && (
         <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
           <div className="relative max-w-[95vw] max-h-[95vh]">
             <button
@@ -788,28 +539,31 @@ const Dashboard = () => {
             <div className="relative flex justify-center">
               <img
                 src={enlargedPhoto.maskedUrl || enlargedPhoto.url}
-                alt={enlargedPhoto.title || 'Enlarged Photo'}
-                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                alt={enlargedPhoto.title}
+                className="max-w-full max-h-[80vh] object-contain"
               />
               
-              {/* AI Masked Badge */}
-              {enlargedPhoto.maskedUrl && (
-                <div className="absolute top-4 left-4 bg-purple-600 text-white px-4 py-2 rounded-full text-lg font-semibold">
-                  🎭 AI Masked
+              {/* AI Processed Badge */}
+              {enlargedPhoto.aiProcessed && (
+                <div className="absolute top-4 left-4 bg-purple-600 text-white px-3 py-1 rounded-full text-sm">
+                  AI Processed ({enlargedPhoto.maskingInfo?.maskedChildren?.length || 0})
                 </div>
               )}
               
               {/* Published Badge */}
               {enlargedPhoto.isPublished && (
-                <div className="absolute top-4 left-20 bg-blue-600 text-white px-4 py-2 rounded-full text-lg font-semibold">
-                  ✅ Published
+                <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm">
+                  Published
                 </div>
               )}
             </div>
             
             <div className="text-center mt-4 text-white">
               <p className="text-lg">{enlargedPhoto.title || 'Untitled Photo'}</p>
-              <p className="text-sm text-gray-300">Click outside or press X to close</p>
+              <p className="text-sm text-gray-300">{enlargedPhoto.description}</p>
+              <p className="text-xs text-gray-400 mt-2">
+                {enlargedPhoto.location} • {enlargedPhoto.teacher} • {enlargedPhoto.date}
+              </p>
             </div>
           </div>
         </div>
