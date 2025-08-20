@@ -194,6 +194,17 @@ const Dashboard = () => {
     let imageUrl = photo.url || photo.currentDisplayUrl
     let showEditedVersion = isAIProcessed && hasMaskedChildren
     
+    // Debug the decision logic
+    console.log('Dashboard: Decision logic debug:', {
+      photoId: photo.id,
+      aiProcessed: photo.aiProcessed,
+      isAIProcessed: isAIProcessed,
+      consentPending: photo.consentPending,
+      hasMaskedChildren: hasMaskedChildren,
+      showEditedVersion: showEditedVersion,
+      editedImageUrl: photo.editedImageUrl
+    })
+    
     // If showing edited version, use the edited image
     if (showEditedVersion) {
       // Use the edited image URL from the photo object

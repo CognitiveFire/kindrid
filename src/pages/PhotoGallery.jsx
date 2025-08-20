@@ -97,6 +97,17 @@ const PhotoGallery = () => {
     const isAIProcessed = Boolean(photo.aiProcessed)
     let showEditedVersion = isAIProcessed && hasMaskedChildren
     
+    // Debug the decision logic
+    console.log('PhotoGallery: Decision logic debug:', {
+      photoId: photo.id,
+      aiProcessed: photo.aiProcessed,
+      isAIProcessed: isAIProcessed,
+      consentPending: photo.consentPending,
+      hasMaskedChildren: hasMaskedChildren,
+      showEditedVersion: showEditedVersion,
+      editedImageUrl: photo.editedImageUrl
+    })
+    
     // If showing edited version, use the edited image
     let imageUrl = photo.url || photo.currentDisplayUrl
     if (showEditedVersion) {
