@@ -141,6 +141,22 @@ const Dashboard = () => {
     }
   }, [consentPhoto])
 
+  // Monitor photos state changes for debugging
+  useEffect(() => {
+    console.log('Dashboard: photos state changed:', {
+      totalPhotos: photos.length,
+      photosWithUrls: photos.filter(p => p.url).length,
+      photosWithoutUrls: photos.filter(p => !p.url).length,
+      photoDetails: photos.map(p => ({
+        id: p.id,
+        title: p.title,
+        hasUrl: !!p.url,
+        hasMaskedUrl: !!p.maskedUrl,
+        aiProcessed: p.aiProcessed
+      }))
+    })
+  }, [photos])
+
   const stats = [
     {
       title: 'Total Photos',
@@ -310,6 +326,12 @@ const Dashboard = () => {
     let imageUrl = isAIProcessed ? photo.maskedUrl : photo.url || photo.currentDisplayUrl
     
     console.log('Dashboard: Final imageUrl:', imageUrl)
+    console.log('Dashboard: Image display decision:', {
+      isAIProcessed,
+      useMaskedUrl: isAIProcessed && photo.maskedUrl,
+      fallbackUrl: photo.url || photo.currentDisplayUrl,
+      finalChoice: isAIProcessed ? 'maskedUrl' : 'originalUrl'
+    })
 
     if (imageUrl) {
       // data URL

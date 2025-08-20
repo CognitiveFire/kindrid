@@ -664,6 +664,12 @@ export const PhotoProvider = ({ children }) => {
     }
     
     console.log('PhotoContext: Processing consent for photo:', currentPhoto.id)
+    console.log('PhotoContext: Current photo before processing:', {
+      id: currentPhoto.id,
+      url: currentPhoto.url ? 'EXISTS' : 'MISSING',
+      currentDisplayUrl: currentPhoto.currentDisplayUrl ? 'EXISTS' : 'MISSING',
+      title: currentPhoto.title
+    })
     
     try {
       // Create a simple masked URL (this is just a prototype!)
@@ -700,12 +706,30 @@ export const PhotoProvider = ({ children }) => {
       console.log('PhotoContext: Photo updated in demo service:', serviceUpdatedPhoto)
       
       // Update local state directly with the updated photo to avoid race conditions
-      setPhotos(prev => prev.map(photo => 
-        photo.id === photoId ? updatedPhoto : photo
-      ))
+      console.log('PhotoContext: About to update local state with photo:', {
+        id: updatedPhoto.id,
+        url: updatedPhoto.url,
+        maskedUrl: updatedPhoto.maskedUrl,
+        aiProcessed: updatedPhoto.aiProcessed
+      })
+      
+      setPhotos(prev => {
+        const newPhotos = prev.map(photo => 
+          photo.id === photoId ? updatedPhoto : photo
+        )
+        console.log('PhotoContext: New photos state after update:', newPhotos.map(p => ({
+          id: p.id,
+          url: p.url ? 'EXISTS' : 'MISSING',
+          maskedUrl: p.maskedUrl ? 'EXISTS' : 'MISSING',
+          aiProcessed: p.aiProcessed
+        })))
+        return newPhotos
+      })
+      
       setPendingConsent(prev => prev.filter(p => p.id !== photoId))
       
       console.log('PhotoContext: Consent processing completed successfully')
+      console.log('PhotoContext: Returning updated photo with URL:', updatedPhoto.url ? 'EXISTS' : 'MISSING')
       return updatedPhoto
       
     } catch (error) {
