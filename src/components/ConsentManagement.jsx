@@ -133,12 +133,15 @@ const ConsentManagement = ({ photo, onClose, onSave, processingConsent }) => {
               onClick={() => {
                 console.log('ConsentManagement: Save button clicked!')
                 console.log('ConsentManagement: Button state - isProcessing:', isProcessing, 'processingConsent:', processingConsent)
+                console.log('ConsentManagement: processingConsent type:', typeof processingConsent)
+                console.log('ConsentManagement: Object.values(processingConsent):', Object.values(processingConsent || {}))
+                console.log('ConsentManagement: Object.values(processingConsent).some(Boolean):', Object.values(processingConsent || {}).some(Boolean))
                 handleSave()
               }}
-              disabled={isProcessing || processingConsent}
+              disabled={isProcessing || (processingConsent && Object.values(processingConsent).some(Boolean))}
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isProcessing || processingConsent ? 'Processing...' : 'Save Photo'}
+              {isProcessing || (processingConsent && Object.values(processingConsent).some(Boolean)) ? 'Processing...' : 'Save Photo'}
             </button>
           </div>
         </div>

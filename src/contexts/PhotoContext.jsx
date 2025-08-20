@@ -622,7 +622,7 @@ export const PhotoProvider = ({ children }) => {
       )
     )
     
-    setPendingConsent(prev => prev.filter(p => p.photoId !== photoId))
+    setPendingConsent(prev => prev.filter(p => p.id !== photoId))
     setLastUpdate(Date.now())
     
     console.log(`✅ Photo ${photoId} published - no further editing allowed`)

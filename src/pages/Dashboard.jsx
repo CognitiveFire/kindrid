@@ -61,8 +61,14 @@ const Dashboard = () => {
     console.log('Dashboard: Children with consent:', childrenWithConsent)
     console.log('Dashboard: Children without consent:', childrenWithoutConsent)
     
-    setProcessingConsent(true)
-    console.log('Dashboard: Set processing consent to true')
+    // Set processing state for all children being processed
+    const allChildren = [...childrenWithConsent, ...childrenWithoutConsent]
+    const processingState = {}
+    allChildren.forEach(child => {
+      processingState[child] = true
+    })
+    setProcessingConsent(processingState)
+    console.log('Dashboard: Set processing consent for children:', processingState)
     
     try {
       console.log('Dashboard: About to call processConsentAndApplyMasking...')
@@ -101,8 +107,13 @@ const Dashboard = () => {
       console.error('Dashboard: Error in handleConsentSave:', error)
       alert('Error saving consent. Please try again.')
     } finally {
-      console.log('Dashboard: Setting processing consent to false')
-      setProcessingConsent(false)
+      console.log('Dashboard: Setting processing consent to false for all children')
+      // Clear processing state for all children
+      const clearState = {}
+      allChildren.forEach(child => {
+        clearState[child] = false
+      })
+      setProcessingConsent(clearState)
       console.log('Dashboard: Consent save process completed')
     }
   }
