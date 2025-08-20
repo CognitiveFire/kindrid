@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { demoPhotoService } from '../services/demoPhotoService'
+import demoPhotoService from '../services/demoPhotoService'
 
 const PhotoContext = createContext()
 
