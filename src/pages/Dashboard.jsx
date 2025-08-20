@@ -61,8 +61,17 @@ const Dashboard = () => {
     console.log('Dashboard: Photo ID:', consentPhoto.id)
     console.log('Dashboard: Children with consent:', childrenWithConsent)
     console.log('Dashboard: Children without consent:', childrenWithoutConsent)
+    console.log('Dashboard: Parameter types - childrenWithConsent:', typeof childrenWithConsent, 'childrenWithoutConsent:', typeof childrenWithoutConsent)
+    console.log('Dashboard: childrenWithConsent isArray:', Array.isArray(childrenWithConsent))
+    console.log('Dashboard: childrenWithoutConsent isArray:', Array.isArray(childrenWithoutConsent))
 
     try {
+      // Ensure parameters are arrays to prevent forEach errors
+      if (!Array.isArray(childrenWithConsent) || !Array.isArray(childrenWithoutConsent)) {
+        console.error('Dashboard: Invalid parameters received:', { childrenWithConsent, childrenWithoutConsent })
+        throw new Error('Invalid parameters: expected arrays but received different types')
+      }
+      
       // Set processing state for all children
       const processingState = {}
       childrenWithConsent.forEach(child => processingState[child] = true)
