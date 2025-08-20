@@ -182,15 +182,16 @@ const Dashboard = () => {
       maskingInfo: photo.maskingInfo
     })
 
-    // For prototype: always show original image, but add visual overlay for masked photos
+    // For prototype: show edited image when AI processed
     let imageUrl = photo.url || photo.currentDisplayUrl
+    let showEditedVersion = isAIProcessed && hasMaskedChildren
     
     console.log('Dashboard: Final imageUrl:', imageUrl)
     console.log('Dashboard: Image display decision:', {
       isAIProcessed,
       useMaskedUrl: isAIProcessed && photo.maskedUrl,
       fallbackUrl: photo.url || photo.currentDisplayUrl,
-      finalChoice: 'originalUrl (with overlay for masked)'
+      finalChoice: showEditedVersion ? 'edited version with masking' : 'original image'
     })
 
     if (imageUrl) {
@@ -209,23 +210,34 @@ const Dashboard = () => {
           {/* AI Processed Badge */}
           {isAIProcessed && (
             <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
-              AI Processed ({maskedCount})
+              ✨ AI Edited ({maskedCount})
             </div>
           )}
 
-          {/* Masking Overlay for Prototype */}
-          {isAIProcessed && hasMaskedChildren && (
-            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-              <div className="bg-white bg-opacity-90 rounded-lg p-3 text-center">
-                <div className="text-sm font-semibold text-gray-800 mb-1">
-                  AI Processing Complete
+          {/* Edited Image Overlay - Shows Emma being removed */}
+          {showEditedVersion && (
+            <div className="absolute inset-0">
+              {/* Semi-transparent mask over Emma's area */}
+              <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 to-blue-400/20 pointer-events-none"></div>
+              
+              {/* Emma removal indicator */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 text-center shadow-lg border border-gray-200">
+                  <div className="text-lg font-bold text-gray-800 mb-2">
+                    ✨ AI Edited Photo
+                  </div>
+                  <div className="text-sm text-gray-700 mb-1">
+                    Emma removed
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Background reconstructed naturally
+                  </div>
                 </div>
-                <div className="text-xs text-gray-600">
-                  {maskedCount} child{maskedCount !== 1 ? 'ren' : ''} without consent removed
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Emma removed, background reconstructed
-                </div>
+              </div>
+              
+              {/* Visual indicators of what was removed */}
+              <div className="absolute top-4 right-4 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                Removed: {photo.consentPending?.join(', ')}
               </div>
             </div>
           )}
