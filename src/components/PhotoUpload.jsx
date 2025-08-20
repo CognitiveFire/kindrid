@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react'
 import { usePhotos } from '../contexts/PhotoContext'
 import { X, Upload, Camera, Users, MapPin, Calendar, Tag, Eye } from 'lucide-react'
 
-const PhotoUpload = ({ onClose, onUploadComplete }) => {
+const PhotoUpload = ({ onCancel, onUploadComplete }) => {
   const { uploadPhoto, userRole, startFaceLearning } = usePhotos()
   const [formData, setFormData] = useState({
     title: '',
@@ -159,7 +159,7 @@ const PhotoUpload = ({ onClose, onUploadComplete }) => {
         })
         
         // Close upload modal and show consent management
-        onClose()
+        onCancel()
         
         // Trigger consent management lightbox
         if (onUploadComplete) {
@@ -193,7 +193,7 @@ const PhotoUpload = ({ onClose, onUploadComplete }) => {
           <h2 className="text-xl font-bold text-gray-900 mb-4">Access Denied</h2>
           <p className="text-gray-600 mb-4">Only teachers can upload photos.</p>
           <button
-            onClick={onClose}
+            onClick={onCancel}
             className="w-full btn-primary"
           >
             Close
@@ -210,7 +210,7 @@ const PhotoUpload = ({ onClose, onUploadComplete }) => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Upload Photo</h2>
             <button
-              onClick={onClose}
+              onClick={onCancel}
               className="text-gray-400 hover:text-gray-600"
             >
               <X className="w-6 h-6" />
@@ -529,7 +529,7 @@ const PhotoUpload = ({ onClose, onUploadComplete }) => {
             <div className="flex justify-end space-x-4">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={onCancel}
                 className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
               >
                 Cancel
