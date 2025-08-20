@@ -163,8 +163,9 @@ const Dashboard = () => {
   }
 
   const renderPhotoImage = (photo) => {
-    const hasMaskedChildren = photo.maskingInfo?.maskedChildren?.length > 0
-    const maskedCount = photo.maskingInfo?.maskedChildren?.length || 0
+    // FIXED: Children WITHOUT consent are the ones removed/masked
+    const hasMaskedChildren = photo.consentPending?.length > 0
+    const maskedCount = photo.consentPending?.length || 0
     // Fix: aiProcessed should be a boolean, not a string
     const isAIProcessed = Boolean(photo.aiProcessed) && Boolean(photo.maskedUrl)
 
@@ -217,13 +218,13 @@ const Dashboard = () => {
             <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
               <div className="bg-white bg-opacity-90 rounded-lg p-3 text-center">
                 <div className="text-sm font-semibold text-gray-800 mb-1">
-                  Photo Processed
+                  AI Processing Complete
                 </div>
                 <div className="text-xs text-gray-600">
-                  {maskedCount} child{maskedCount !== 1 ? 'ren' : ''} removed
+                  {maskedCount} child{maskedCount !== 1 ? 'ren' : ''} without consent removed
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  (Prototype - shows original)
+                  Emma removed, background reconstructed
                 </div>
               </div>
             </div>
