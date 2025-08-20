@@ -196,6 +196,15 @@ const Dashboard = () => {
       console.log('Dashboard: Using original image:', imageUrl)
     }
     
+    // Fallback: if edited image fails, show original with overlay
+    const fallbackImageUrl = photo.url || photo.currentDisplayUrl
+    
+    // Debug: Check if image URL is valid
+    console.log('Dashboard: Final imageUrl for rendering:', imageUrl)
+    console.log('Dashboard: showEditedVersion:', showEditedVersion)
+    console.log('Dashboard: isAIProcessed:', isAIProcessed)
+    console.log('Dashboard: hasMaskedChildren:', hasMaskedChildren)
+    
     console.log('Dashboard: Final imageUrl:', imageUrl)
     console.log('Dashboard: Image display decision:', {
       isAIProcessed,
@@ -213,7 +222,20 @@ const Dashboard = () => {
             className="w-full h-48 object-cover"
             onError={(e) => {
               console.error('Dashboard: Image failed to load:', imageUrl)
-              e.target.style.display = 'none'
+              console.error('Dashboard: Error details:', e.target.error)
+              console.error('Dashboard: Image element:', e.target)
+              
+              // Fallback to original image if edited image fails
+              if (showEditedVersion && fallbackImageUrl) {
+                console.log('Dashboard: Falling back to original image:', fallbackImageUrl)
+                e.target.src = fallbackImageUrl
+                e.target.style.display = 'block'
+              } else {
+                e.target.style.display = 'none'
+              }
+            }}
+            onLoad={() => {
+              console.log('Dashboard: Image loaded successfully:', imageUrl)
             }}
           />
           
