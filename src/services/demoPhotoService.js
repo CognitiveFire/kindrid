@@ -218,12 +218,26 @@ class DemoPhotoService {
     
     const index = this.photos.findIndex(photo => photo.id === id)
     if (index !== -1) {
-      this.photos[index] = { ...this.photos[index], ...updates }
+      // Preserve the current image data when updating
+      const currentPhoto = this.photos[index]
+      const updatedPhoto = { ...currentPhoto, ...updates }
       
-      // Save to localStorage
+      // Ensure image data is preserved in memory
+      if (currentPhoto.url && !updatedPhoto.url) {
+        updatedPhoto.url = currentPhoto.url
+        console.log('DemoPhotoService: Preserved image URL during update')
+      }
+      if (currentPhoto.currentDisplayUrl && !updatedPhoto.currentDisplayUrl) {
+        updatedPhoto.currentDisplayUrl = currentPhoto.currentDisplayUrl
+        console.log('DemoPhotoService: Preserved currentDisplayUrl during update')
+      }
+      
+      this.photos[index] = updatedPhoto
+      
+      // Save metadata to localStorage (without image data)
       this.savePhotosToStorage()
       
-      console.log('DemoPhotoService: Photo updated successfully')
+      console.log('DemoPhotoService: Photo updated successfully with image data preserved')
       return this.photos[index]
     }
     

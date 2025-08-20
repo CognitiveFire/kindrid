@@ -80,6 +80,13 @@ const Dashboard = () => {
       
       if (updatedPhoto) {
         console.log('Dashboard: Consent saved successfully')
+        console.log('Dashboard: Updated photo object:', {
+          id: updatedPhoto.id,
+          url: updatedPhoto.url,
+          maskedUrl: updatedPhoto.maskedUrl,
+          aiProcessed: updatedPhoto.aiProcessed,
+          maskingInfo: updatedPhoto.maskingInfo
+        })
         
         // Close the consent management modal
         console.log('Dashboard: Closing consent management modal...')

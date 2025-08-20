@@ -682,6 +682,9 @@ export const PhotoProvider = ({ children }) => {
         status: 'approved',
         aiProcessed: childrenWithoutConsent.length > 0,
         maskedUrl: maskedUrl,
+        // Keep the original URL for display - this is crucial!
+        url: currentPhoto.url,
+        currentDisplayUrl: currentPhoto.url,
         maskingInfo: childrenWithoutConsent.length > 0 ? {
           action: 'consent_processed',
           maskedChildren: childrenWithoutConsent,
@@ -690,19 +693,17 @@ export const PhotoProvider = ({ children }) => {
         } : null
       }
       
-      console.log('PhotoContext: Updated photo object created')
+      console.log('PhotoContext: Updated photo object created with URL preserved:', updatedPhoto.url)
       
       // Update in demo service
       const serviceUpdatedPhoto = demoPhotoService.updatePhoto(photoId, updatedPhoto)
       console.log('PhotoContext: Photo updated in demo service:', serviceUpdatedPhoto)
       
-      // Get fresh data from service with images restored
-      const allPhotos = demoPhotoService.getAllPhotosWithImages()
-      console.log('PhotoContext: All photos after update:', allPhotos.length)
-      
-      // Update local state
-      setPhotos(allPhotos)
-      setPendingConsent(allPhotos.filter(p => p.status === 'pending_consent'))
+      // Update local state directly with the updated photo to avoid race conditions
+      setPhotos(prev => prev.map(photo => 
+        photo.id === photoId ? updatedPhoto : photo
+      ))
+      setPendingConsent(prev => prev.filter(p => p.id !== photoId))
       
       console.log('PhotoContext: Consent processing completed successfully')
       return updatedPhoto
