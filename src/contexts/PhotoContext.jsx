@@ -29,9 +29,9 @@ export const PhotoProvider = ({ children }) => {
   const [lastUpdate, setLastUpdate] = useState(Date.now()) // State to force re-renders
 
   useEffect(() => {
-    // Load demo photos from service
-    const demoPhotos = demoPhotoService.getAllPhotos()
-    console.log('PhotoContext: Loaded demo photos:', demoPhotos)
+    // Load demo photos from service with images restored from sessionStorage
+    const demoPhotos = demoPhotoService.getAllPhotosWithImages()
+    console.log('PhotoContext: Loaded demo photos with images:', demoPhotos)
     
     setPhotos(demoPhotos)
     setPendingConsent(demoPhotos.filter(p => p.status === 'pending_consent'))
@@ -96,8 +96,8 @@ export const PhotoProvider = ({ children }) => {
       const addedPhoto = demoPhotoService.addPhoto(newPhoto)
       console.log('PhotoContext: Added photo to demo service:', addedPhoto)
       
-      // Verify photo is in demo service
-      const allPhotos = demoPhotoService.getAllPhotos()
+      // Verify photo is in demo service with images restored
+      const allPhotos = demoPhotoService.getAllPhotosWithImages()
       console.log('PhotoContext: All photos in demo service after add:', allPhotos.length)
       console.log('PhotoContext: Photo IDs in demo service:', allPhotos.map(p => p.id))
       
@@ -696,8 +696,8 @@ export const PhotoProvider = ({ children }) => {
       const serviceUpdatedPhoto = demoPhotoService.updatePhoto(photoId, updatedPhoto)
       console.log('PhotoContext: Photo updated in demo service:', serviceUpdatedPhoto)
       
-      // Get fresh data from service
-      const allPhotos = demoPhotoService.getAllPhotos()
+      // Get fresh data from service with images restored
+      const allPhotos = demoPhotoService.getAllPhotosWithImages()
       console.log('PhotoContext: All photos after update:', allPhotos.length)
       
       // Update local state

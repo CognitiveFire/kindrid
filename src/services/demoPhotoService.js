@@ -95,32 +95,83 @@ const demoPhotos = [
 class DemoPhotoService {
   constructor() {
     // Load photos from localStorage if available, otherwise use demo photos
-    this.photos = this.loadPhotosFromStorage() || [...demoPhotos]
+    const storedPhotos = this.loadPhotosFromStorage()
+    if (storedPhotos) {
+      this.photos = storedPhotos
+      console.log('DemoPhotoService: Loaded stored photos:', this.photos.length)
+    } else {
+      this.photos = [...demoPhotos]
+      console.log('DemoPhotoService: Using demo photos:', this.photos.length)
+    }
     this.nextId = Math.max(...this.photos.map(p => parseInt(p.id)), 0) + 1
   }
 
-  // Load photos from localStorage
+  // Load photos from localStorage (metadata only)
   loadPhotosFromStorage() {
     try {
       const stored = localStorage.getItem('kindrid-photos')
       if (stored) {
         const photos = JSON.parse(stored)
-        console.log('DemoPhotoService: Loaded photos from localStorage:', photos.length)
+        console.log('DemoPhotoService: Loaded photo metadata from localStorage:', photos.length)
         return photos
       }
     } catch (error) {
       console.error('DemoPhotoService: Error loading from localStorage:', error)
     }
+    
+    // Try to load essential data as fallback
+    try {
+      const essentialStored = localStorage.getItem('kindrid-photos-essential')
+      if (essentialStored) {
+        const essentialPhotos = JSON.parse(essentialStored)
+        console.log('DemoPhotoService: Loaded essential metadata as fallback:', essentialPhotos.length)
+        return essentialPhotos
+      }
+    } catch (fallbackError) {
+      console.error('DemoPhotoService: Error loading essential data:', fallbackError)
+    }
+    
     return null
   }
 
-  // Save photos to localStorage
+  // Save photos to localStorage (metadata only, not full image data)
   savePhotosToStorage() {
     try {
-      localStorage.setItem('kindrid-photos', JSON.stringify(this.photos))
-      console.log('DemoPhotoService: Saved photos to localStorage:', this.photos.length)
+      // Create a copy of photos with image data removed to save space
+      const photosForStorage = this.photos.map(photo => {
+        const { url, currentDisplayUrl, maskedUrl, ...metadata } = photo
+        return {
+          ...metadata,
+          // Store only a reference to the image, not the full data
+          hasImageData: !!url,
+          imageType: url ? 'base64' : 'none'
+        }
+      })
+      
+      localStorage.setItem('kindrid-photos', JSON.stringify(photosForStorage))
+      console.log('DemoPhotoService: Saved photo metadata to localStorage:', photosForStorage.length)
     } catch (error) {
       console.error('DemoPhotoService: Error saving to localStorage:', error)
+      // If localStorage fails, try to save just the essential metadata
+      try {
+        const essentialData = this.photos.map(photo => ({
+          id: photo.id,
+          title: photo.title,
+          description: photo.description,
+          children: photo.children,
+          status: photo.status,
+          consentGiven: photo.consentGiven,
+          consentPending: photo.consentPending,
+          date: photo.date,
+          location: photo.location,
+          teacher: photo.teacher,
+          uploadedAt: photo.uploadedAt
+        }))
+        localStorage.setItem('kindrid-photos-essential', JSON.stringify(essentialData))
+        console.log('DemoPhotoService: Saved essential metadata as fallback')
+      } catch (fallbackError) {
+        console.error('DemoPhotoService: Failed to save even essential data:', fallbackError)
+      }
     }
   }
 
@@ -141,6 +192,11 @@ class DemoPhotoService {
       id: photoData.id || this.nextId.toString()
     }
     
+    // Store the actual image data in sessionStorage for this session
+    if (photo.url && photo.url.startsWith('data:')) {
+      this.storeImageInSession(photo.id, photo.url)
+    }
+    
     // Add to the beginning of the array (most recent first)
     this.photos.unshift(photo)
     
@@ -148,7 +204,7 @@ class DemoPhotoService {
       this.nextId++
     }
     
-    // Save to localStorage
+    // Save metadata to localStorage (without image data)
     this.savePhotosToStorage()
     
     console.log('DemoPhotoService: Photo added successfully. Total photos:', this.photos.length)
@@ -214,7 +270,10 @@ class DemoPhotoService {
         URL.revokeObjectURL(removedPhoto.url)
       }
       
-      // Save to localStorage
+      // Clean up sessionStorage
+      this.removeImageFromSession(removedPhoto.id)
+      
+      // Save metadata to localStorage
       this.savePhotosToStorage()
       
       console.log('DemoPhotoService: Photo removed successfully. Total photos:', this.photos.length)
@@ -320,6 +379,76 @@ class DemoPhotoService {
       failed,
       successRate: total > 0 ? ((processed / total) * 100).toFixed(1) : 0
     }
+  }
+
+  // Store image data in sessionStorage for current session
+  storeImageInSession(photoId, imageData) {
+    try {
+      const key = `kindrid-image-${photoId}`
+      sessionStorage.setItem(key, imageData)
+      console.log('DemoPhotoService: Stored image in sessionStorage for photo:', photoId)
+      return true
+    } catch (error) {
+      console.error('DemoPhotoService: Error storing image in sessionStorage:', error)
+      return false
+    }
+  }
+
+  // Retrieve image data from sessionStorage
+  getImageFromSession(photoId) {
+    try {
+      const key = `kindrid-image-${photoId}`
+      const imageData = sessionStorage.getItem(key)
+      if (imageData) {
+        console.log('DemoPhotoService: Retrieved image from sessionStorage for photo:', photoId)
+        return imageData
+      }
+      return null
+    } catch (error) {
+      console.error('DemoPhotoService: Error retrieving image from sessionStorage:', error)
+      return null
+    }
+  }
+
+  // Clean up sessionStorage when photo is removed
+  removeImageFromSession(photoId) {
+    try {
+      const key = `kindrid-image-${photoId}`
+      sessionStorage.removeItem(key)
+      console.log('DemoPhotoService: Removed image from sessionStorage for photo:', photoId)
+    } catch (error) {
+      console.error('DemoPhotoService: Error removing image from sessionStorage:', error)
+    }
+  }
+
+  // Get photo with image data restored from sessionStorage if needed
+  getPhotoWithImage(photoId) {
+    const photo = this.getPhotoById(photoId)
+    if (!photo) return null
+    
+    // If photo doesn't have image data but should, try to restore from sessionStorage
+    if (!photo.url && photo.hasImageData) {
+      const imageData = this.getImageFromSession(photoId)
+      if (imageData) {
+        photo.url = imageData
+        console.log('DemoPhotoService: Restored image data for photo:', photoId)
+      }
+    }
+    
+    return photo
+  }
+
+  // Get all photos with images restored from sessionStorage
+  getAllPhotosWithImages() {
+    return this.photos.map(photo => {
+      if (!photo.url && photo.hasImageData) {
+        const imageData = this.getImageFromSession(photo.id)
+        if (imageData) {
+          return { ...photo, url: imageData }
+        }
+      }
+      return photo
+    })
   }
 }
 
