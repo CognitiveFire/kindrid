@@ -186,12 +186,18 @@ const Dashboard = () => {
     let imageUrl = photo.url || photo.currentDisplayUrl
     let showEditedVersion = isAIProcessed && hasMaskedChildren
     
+    // If showing edited version, use the edited image
+    if (showEditedVersion) {
+      // For prototype: use the edited image without Emma
+      imageUrl = '/Edited-image.png'
+    }
+    
     console.log('Dashboard: Final imageUrl:', imageUrl)
     console.log('Dashboard: Image display decision:', {
       isAIProcessed,
       useMaskedUrl: isAIProcessed && photo.maskedUrl,
       fallbackUrl: photo.url || photo.currentDisplayUrl,
-      finalChoice: showEditedVersion ? 'edited version with masking' : 'original image'
+      finalChoice: showEditedVersion ? 'edited version (Emma removed)' : 'original image (with Emma)'
     })
 
     if (imageUrl) {
@@ -214,31 +220,10 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Edited Image Overlay - Shows Emma being removed */}
+          {/* Success Indicator for Edited Image */}
           {showEditedVersion && (
-            <div className="absolute inset-0">
-              {/* Semi-transparent mask over Emma's area */}
-              <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 to-blue-400/20 pointer-events-none"></div>
-              
-              {/* Emma removal indicator */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 text-center shadow-lg border border-gray-200">
-                  <div className="text-lg font-bold text-gray-800 mb-2">
-                    ✨ AI Edited Photo
-                  </div>
-                  <div className="text-sm text-gray-700 mb-1">
-                    Emma removed
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Background reconstructed naturally
-                  </div>
-                </div>
-              </div>
-              
-              {/* Visual indicators of what was removed */}
-              <div className="absolute top-4 right-4 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                Removed: {photo.consentPending?.join(', ')}
-              </div>
+            <div className="absolute top-4 right-4 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+              ✨ Emma Removed
             </div>
           )}
 
