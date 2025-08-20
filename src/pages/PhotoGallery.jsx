@@ -92,8 +92,16 @@ const PhotoGallery = () => {
   }
 
   const renderPhotoImage = (photo) => {
-    // Priority: masked URL > current display URL > original URL
-    let imageUrl = photo.maskedUrl || photo.currentDisplayUrl || photo.url
+    // Use same logic as Dashboard for consistency
+    const hasMaskedChildren = photo.consentPending?.length > 0
+    const isAIProcessed = Boolean(photo.aiProcessed) && Boolean(photo.maskedUrl)
+    let showEditedVersion = isAIProcessed && hasMaskedChildren
+    
+    // If showing edited version, use the edited image
+    let imageUrl = photo.url || photo.currentDisplayUrl
+    if (showEditedVersion) {
+      imageUrl = '/Edited-image.png'
+    }
     
     if (imageUrl) {
       // Check if it's a data URL (SVG placeholder)
@@ -119,11 +127,19 @@ const PhotoGallery = () => {
       // Check if it's a regular file path (like /1.jpg, /2.jpg, etc.)
       if (imageUrl.startsWith('/')) {
         return (
-          <img 
-            src={imageUrl} 
-            alt={photo.title}
-            className="w-full h-48 object-cover"
-          />
+          <div className="relative">
+            <img 
+              src={imageUrl} 
+              alt={photo.title}
+              className="w-full h-48 object-cover"
+            />
+            {/* AI Edited Badge */}
+            {showEditedVersion && (
+              <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
+                ✨ AI Edited ({photo.consentPending?.length || 0})
+              </div>
+            )}
+          </div>
         )
         // Check if it's a masked URL with query parameters
       } else if (imageUrl.includes('?masked=true')) {

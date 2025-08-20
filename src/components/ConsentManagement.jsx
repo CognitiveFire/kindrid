@@ -10,9 +10,11 @@ const ConsentManagement = ({ photo, onClose, onSave, processingConsent }) => {
     if (photo?.children) {
       const initialStatus = {}
       photo.children.forEach(child => {
+        // All children start as "Remove" (no consent) by default
         initialStatus[child] = false // false = "Remove", true = "Visible"
       })
       setConsentStatus(initialStatus)
+      console.log('ConsentManagement: Initialized all children as "Remove":', initialStatus)
     }
   }, [photo])
 
@@ -114,6 +116,9 @@ const ConsentManagement = ({ photo, onClose, onSave, processingConsent }) => {
           {/* Instructions */}
           <div className="mb-6 p-4 bg-blue-50 rounded-lg">
             <p className="text-blue-800 text-sm">
+              <strong>Default State:</strong> All children start as "Remove" (no consent). You must explicitly approve each child you want to keep visible.
+            </p>
+            <p className="text-blue-800 text-sm mt-2">
               <strong>How it works:</strong> Children marked as "Remove" will be completely removed from the photo 
               using AI technology. The background will be reconstructed to look natural. 
               Children marked as "Visible" will remain in the photo.

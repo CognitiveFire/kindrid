@@ -190,6 +190,9 @@ const Dashboard = () => {
     if (showEditedVersion) {
       // For prototype: use the edited image without Emma
       imageUrl = '/Edited-image.png'
+      console.log('Dashboard: Using edited image:', imageUrl)
+    } else {
+      console.log('Dashboard: Using original image:', imageUrl)
     }
     
     console.log('Dashboard: Final imageUrl:', imageUrl)
@@ -223,7 +226,7 @@ const Dashboard = () => {
           {/* Success Indicator for Edited Image */}
           {showEditedVersion && (
             <div className="absolute top-4 right-4 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-              ✨ Emma Removed
+              ✨ AI Edited
             </div>
           )}
 
