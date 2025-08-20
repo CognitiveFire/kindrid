@@ -681,23 +681,24 @@ export const PhotoProvider = ({ children }) => {
       }
       
       // Update the photo object
-      const updatedPhoto = {
-        ...currentPhoto,
-        consentGiven: childrenWithConsent,
-        consentPending: childrenWithoutConsent,
-        status: 'approved',
-        aiProcessed: childrenWithoutConsent.length > 0,
-        maskedUrl: maskedUrl,
-        // Keep the original URL for display - this is crucial!
-        url: currentPhoto.url,
-        currentDisplayUrl: currentPhoto.url,
-        maskingInfo: childrenWithoutConsent.length > 0 ? {
-          action: 'consent_processed',
-          maskedChildren: childrenWithoutConsent,
-          technique: 'prototype_masking',
-          appliedAt: new Date().toISOString()
-        } : null
-      }
+              const updatedPhoto = {
+          ...currentPhoto,
+          consentGiven: childrenWithConsent,
+          consentPending: childrenWithoutConsent,
+          status: 'approved',
+          // Ensure aiProcessed is always a boolean
+          aiProcessed: Boolean(childrenWithoutConsent.length > 0),
+          maskedUrl: maskedUrl,
+          // Keep the original URL for display - this is crucial!
+          url: currentPhoto.url,
+          currentDisplayUrl: currentPhoto.url,
+          maskingInfo: childrenWithoutConsent.length > 0 ? {
+            action: 'consent_processed',
+            maskedChildren: childrenWithoutConsent,
+            technique: 'prototype_masking',
+            appliedAt: new Date().toISOString()
+          } : null
+        }
       
       console.log('PhotoContext: Updated photo object created with URL preserved:', updatedPhoto.url)
       

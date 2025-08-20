@@ -308,7 +308,8 @@ const Dashboard = () => {
   const renderPhotoImage = (photo) => {
     const hasMaskedChildren = photo.maskingInfo?.maskedChildren?.length > 0
     const maskedCount = photo.maskingInfo?.maskedChildren?.length || 0
-    const isAIProcessed = photo.aiProcessed && photo.maskedUrl
+    // Fix: aiProcessed should be a boolean, not a string
+    const isAIProcessed = Boolean(photo.aiProcessed) && Boolean(photo.maskedUrl)
 
     // Debug image URL logic
     console.log('Dashboard: renderPhotoImage debug:', {
@@ -318,6 +319,7 @@ const Dashboard = () => {
       currentDisplayUrl: photo.currentDisplayUrl,
       maskedUrl: photo.maskedUrl,
       aiProcessed: photo.aiProcessed,
+      aiProcessedType: typeof photo.aiProcessed,
       isAIProcessed: isAIProcessed,
       maskingInfo: photo.maskingInfo
     })
