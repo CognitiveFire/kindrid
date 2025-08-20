@@ -30,6 +30,7 @@ const Dashboard = () => {
   const [showEnlarged, setShowEnlarged] = useState(false)
   const [enlargedPhoto, setEnlargedPhoto] = useState(null)
   const [processingConsent, setProcessingConsent] = useState({})
+  const [editedImagesLoaded, setEditedImagesLoaded] = useState(new Set())
 
   // Monitor photos state changes for debugging
   useEffect(() => {
@@ -232,8 +233,8 @@ const Dashboard = () => {
               console.error('Dashboard: Error details:', e.target.error)
               console.error('Dashboard: Image element:', e.target)
               
-              // Fallback to original image if edited image fails
-              if (showEditedVersion && fallbackImageUrl) {
+              // Only fallback if this is NOT the edited image that just loaded successfully
+              if (showEditedVersion && fallbackImageUrl && !editedImagesLoaded.has(photo.id)) {
                 console.log('Dashboard: Falling back to original image:', fallbackImageUrl)
                 e.target.src = fallbackImageUrl
                 e.target.style.display = 'block'
@@ -243,6 +244,11 @@ const Dashboard = () => {
             }}
             onLoad={() => {
               console.log('Dashboard: Image loaded successfully:', imageUrl)
+              // Mark that the edited image has loaded successfully
+              if (showEditedVersion) {
+                console.log('Dashboard: Marking edited image as loaded successfully')
+                setEditedImagesLoaded(prev => new Set([...prev, photo.id]))
+              }
             }}
           />
           
