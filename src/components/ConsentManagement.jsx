@@ -43,7 +43,7 @@ const ConsentManagement = ({ photo, onClose, onSave, processingConsent }) => {
       console.log('ConsentManagement: About to call onSave...')
       
       // Call parent save function
-      await onSave(photo.id, childrenWithConsent, childrenWithoutConsent)
+      await onSave(childrenWithConsent, childrenWithoutConsent)
       
       console.log('ConsentManagement: onSave completed successfully')
     } catch (error) {
