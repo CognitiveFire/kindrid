@@ -189,8 +189,8 @@ const Dashboard = () => {
     
     // If showing edited version, use the edited image
     if (showEditedVersion) {
-      // For prototype: use the edited image without Emma
-      imageUrl = '/Edited-image.png'
+      // Use the edited image URL from the photo object
+      imageUrl = photo.editedImageUrl || '/Edited-image.png'
       console.log('Dashboard: Using edited image:', imageUrl)
     } else {
       console.log('Dashboard: Using original image:', imageUrl)

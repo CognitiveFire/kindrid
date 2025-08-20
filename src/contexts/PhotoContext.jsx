@@ -83,11 +83,17 @@ export const PhotoProvider = ({ children }) => {
 
       // Create masked URL if children need masking
       let maskedUrl = null
+      let editedImageUrl = null
       if (childrenWithoutConsent.length > 0) {
         // For prototype: create a simple masked URL that simulates AI processing
         // In real implementation, this would be a link to the processed image
         maskedUrl = `/api/photos/${photoId}/masked?children=${childrenWithoutConsent.join(',')}&timestamp=${Date.now()}`
+        
+        // For prototype: set the actual edited image path
+        editedImageUrl = '/Edited-image.png'
+        
         console.log('PhotoContext: Created masked URL:', maskedUrl)
+        console.log('PhotoContext: Set edited image URL:', editedImageUrl)
       }
 
       // Update photo
@@ -98,6 +104,7 @@ export const PhotoProvider = ({ children }) => {
         status: 'approved',
         aiProcessed: childrenWithoutConsent.length > 0,
         maskedUrl: maskedUrl,
+        editedImageUrl: editedImageUrl, // Add the actual edited image path
         maskingInfo: childrenWithoutConsent.length > 0 ? {
           action: 'consent_processed',
           maskedChildren: childrenWithoutConsent,

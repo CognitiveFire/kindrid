@@ -100,7 +100,12 @@ const PhotoGallery = () => {
     // If showing edited version, use the edited image
     let imageUrl = photo.url || photo.currentDisplayUrl
     if (showEditedVersion) {
-      imageUrl = '/Edited-image.png'
+      // Use the edited image URL from the photo object
+      imageUrl = photo.editedImageUrl || '/Edited-image.png'
+      console.log('PhotoGallery: Using edited image:', imageUrl)
+      console.log('PhotoGallery: Photo editedImageUrl:', photo.editedImageUrl)
+    } else {
+      console.log('PhotoGallery: Using original image:', imageUrl)
     }
     
     if (imageUrl) {
