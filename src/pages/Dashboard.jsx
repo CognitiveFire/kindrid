@@ -223,6 +223,7 @@ const Dashboard = () => {
       return (
         <div className="relative" data-photo-id={photo.id}>
           <img
+            key={`${photo.id}-${showEditedVersion ? 'edited' : 'original'}`}
             src={imageUrl}
             alt={photo.title}
             className="w-full h-48 object-cover"

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, startTransition } from 'react'
 import demoPhotoService from '../services/demoPhotoService'
 
 const PhotoContext = createContext()
@@ -121,15 +121,17 @@ export const PhotoProvider = ({ children }) => {
       console.log('PhotoContext: Service returned saved photo:', savedPhoto)
       console.log('PhotoContext: Saved photo has editedImageUrl:', savedPhoto?.editedImageUrl)
 
-      // Update local state
-      setPhotos(prev => {
-        const newPhotos = prev.map(p => p.id === photoId ? savedPhoto : p)
-        console.log('PhotoContext: Updated photos state:', newPhotos.find(p => p.id === photoId))
-        return newPhotos
-      })
+      // Batch state updates to prevent multiple re-renders
+      startTransition(() => {
+        setPhotos(prev => {
+          const newPhotos = prev.map(p => p.id === photoId ? savedPhoto : p)
+          console.log('PhotoContext: Updated photos state:', newPhotos.find(p => p.id === photoId))
+          return newPhotos
+        })
 
-      // Remove from pending consent
-      setPendingConsent(prev => prev.filter(p => p.id !== photoId))
+        // Remove from pending consent
+        setPendingConsent(prev => prev.filter(p => p.id !== photoId))
+      })
 
       console.log('PhotoContext: Consent processing completed')
       return savedPhoto
