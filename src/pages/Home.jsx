@@ -67,36 +67,15 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Right Column - Kindrid Logo */}
+            {/* Right Column - Hero Image */}
             <div className="flex justify-center lg:justify-end">
               <div className="relative">
-                <div className="w-full max-w-md h-80 bg-gradient-to-br from-kindrid-100 to-kindrid-200 rounded-2xl shadow-2xl flex items-center justify-center p-8">
-                  <div className="text-center">
-                    {/* Kindrid Logo Design */}
-                    <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                      <div className="relative">
-                        {/* Shield with Heart */}
-                        <div className="w-24 h-24 bg-kindrid-600 rounded-lg transform rotate-45 flex items-center justify-center">
-                          <div className="w-16 h-16 bg-white rounded-lg transform -rotate-45 flex items-center justify-center">
-                            <div className="w-8 h-8 bg-kindrid-600 rounded-full flex items-center justify-center">
-                              <div className="w-4 h-4 bg-white rounded-full"></div>
-                            </div>
-                          </div>
-                        </div>
-                        {/* Heart inside shield */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-6 h-6 bg-red-500 transform rotate-45"></div>
-                        </div>
-                      </div>
-                    </div>
-                    <h3 className="text-2xl font-bold text-kindrid-800 mb-2">Kindrid</h3>
-                    <p className="text-sm text-kindrid-700">
-                      Trust. Control. Memories — safely shared.
-                    </p>
-                    <div className="mt-3 text-xs text-kindrid-600">
-                      Powered by ClassVault™ AI
-                    </div>
-                  </div>
+                <div className="w-full max-w-md h-80 rounded-2xl shadow-2xl overflow-hidden">
+                  <img 
+                    src="/kindrid-hero.png" 
+                    alt="Kindrid - Trust. Control. Memories" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-2xl"></div>
               </div>
