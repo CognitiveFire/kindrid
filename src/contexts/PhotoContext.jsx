@@ -89,8 +89,8 @@ export const PhotoProvider = ({ children }) => {
         // In real implementation, this would be a link to the processed image
         maskedUrl = `/api/photos/${photoId}/masked?children=${childrenWithoutConsent.join(',')}&timestamp=${Date.now()}`
         
-        // For prototype: set the actual edited image path with timestamp to prevent caching
-        editedImageUrl = `/Edited-image.png?t=${Date.now()}`
+        // For prototype: set the actual edited image path with unique timestamp to prevent caching
+        editedImageUrl = `/Edited-image.png?t=${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         
         console.log('PhotoContext: Created masked URL:', maskedUrl)
         console.log('PhotoContext: Set edited image URL:', editedImageUrl)
