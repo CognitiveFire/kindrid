@@ -136,7 +136,7 @@ const PhotoGallery = () => {
               onError={(e) => {
                 console.error('PhotoGallery: Image failed to load:', imageUrl)
                 // Fallback to original image if edited image fails
-                if (showEditedVersion && (photo.url || photo.currentDisplayUrl)) {
+                if (hasEditedImage && (photo.url || photo.currentDisplayUrl)) {
                   console.log('PhotoGallery: Falling back to original image')
                   e.target.src = photo.url || photo.currentDisplayUrl
                 }
