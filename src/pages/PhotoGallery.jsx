@@ -92,32 +92,16 @@ const PhotoGallery = () => {
   }
 
   const renderPhotoImage = (photo) => {
-    // Use same logic as Dashboard for consistency
-    const hasMaskedChildren = photo.consentPending?.length > 0
-    const isAIProcessed = Boolean(photo.aiProcessed)
-    let showEditedVersion = isAIProcessed && hasMaskedChildren
+    // SIMPLIFIED LOGIC: If photo has editedImageUrl, use it; otherwise use original
+    const hasEditedImage = Boolean(photo.editedImageUrl)
+    const imageUrl = hasEditedImage ? photo.editedImageUrl : (photo.url || photo.currentDisplayUrl)
     
-    // Debug the decision logic
-    console.log('PhotoGallery: Decision logic debug:', {
+    console.log('PhotoGallery: Simplified image logic:', {
       photoId: photo.id,
-      aiProcessed: photo.aiProcessed,
-      isAIProcessed: isAIProcessed,
-      consentPending: photo.consentPending,
-      hasMaskedChildren: hasMaskedChildren,
-      showEditedVersion: showEditedVersion,
-      editedImageUrl: photo.editedImageUrl
+      hasEditedImage,
+      editedImageUrl: photo.editedImageUrl,
+      finalImageUrl: imageUrl
     })
-    
-    // If showing edited version, use the edited image
-    let imageUrl = photo.url || photo.currentDisplayUrl
-    if (showEditedVersion) {
-      // Use the edited image URL from the photo object
-      imageUrl = photo.editedImageUrl || '/Edited-image.png'
-      console.log('PhotoGallery: Using edited image:', imageUrl)
-      console.log('PhotoGallery: Photo editedImageUrl:', photo.editedImageUrl)
-    } else {
-      console.log('PhotoGallery: Using original image:', imageUrl)
-    }
     
     if (imageUrl) {
       // Check if it's a data URL (SVG placeholder)
@@ -145,7 +129,7 @@ const PhotoGallery = () => {
         return (
           <div className="relative">
             <img 
-              key={`${photo.id}-${showEditedVersion ? 'edited' : 'original'}`}
+              key={`${photo.id}-${hasEditedImage ? 'edited' : 'original'}`}
               src={imageUrl} 
               alt={photo.title}
               className="w-full h-48 object-cover"
@@ -159,9 +143,9 @@ const PhotoGallery = () => {
               }}
             />
             {/* AI Edited Badge */}
-            {showEditedVersion && (
-              <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
-                ✨ AI Edited ({photo.consentPending?.length || 0})
+            {hasEditedImage && (
+              <div className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full">
+                ✨ AI Edited
               </div>
             )}
           </div>

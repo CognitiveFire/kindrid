@@ -50,6 +50,10 @@ app.get('/test', (req, res) => {
 console.log(`📁 Serving dist directory from: ${path.join(__dirname, 'dist')}`);
 app.use(express.static(path.join(__dirname, 'dist')));
 
+// Serve static files from the public directory (for images like Edited-image.png)
+console.log(`📁 Serving public directory from: ${path.join(__dirname, 'public')}`);
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Serve the React app for the root route
 app.get('/', (req, res) => {
   console.log('🏠 Root route requested');

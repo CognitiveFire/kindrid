@@ -164,113 +164,37 @@ const Dashboard = () => {
   }
 
   const renderPhotoImage = (photo) => {
-    // FIXED: Children WITHOUT consent are the ones removed/masked
-    const hasMaskedChildren = photo.consentPending?.length > 0
-    const maskedCount = photo.consentPending?.length || 0
-    // Simplified: just check if photo has been processed and has pending consent
-    const isAIProcessed = Boolean(photo.aiProcessed)
-
-    // Debug image URL logic
-    console.log('Dashboard: renderPhotoImage debug:', {
+    // SIMPLIFIED LOGIC: If photo has editedImageUrl, use it; otherwise use original
+    const hasEditedImage = Boolean(photo.editedImageUrl)
+    const imageUrl = hasEditedImage ? photo.editedImageUrl : (photo.url || photo.currentDisplayUrl)
+    
+    console.log('Dashboard: Simplified image logic:', {
       photoId: photo.id,
-      title: photo.title,
-      url: photo.url,
-      currentDisplayUrl: photo.currentDisplayUrl,
-      maskedUrl: photo.maskedUrl,
+      hasEditedImage,
       editedImageUrl: photo.editedImageUrl,
-      aiProcessed: photo.aiProcessed,
-      aiProcessedType: typeof photo.aiProcessed,
-      isAIProcessed: isAIProcessed,
-      consentPending: photo.consentPending,
-      hasMaskedChildren: hasMaskedChildren
-    })
-    
-    // Debug: Check if photo object has the editedImageUrl field
-    console.log('Dashboard: Photo object keys:', Object.keys(photo))
-    console.log('Dashboard: Photo editedImageUrl value:', photo.editedImageUrl)
-    console.log('Dashboard: Photo maskedUrl value:', photo.maskedUrl)
-
-    // For prototype: show edited image when AI processed and has masked children
-    let imageUrl = photo.url || photo.currentDisplayUrl
-    let showEditedVersion = isAIProcessed && hasMaskedChildren
-    
-    // Debug the decision logic
-    console.log('Dashboard: Decision logic debug:', {
-      photoId: photo.id,
-      aiProcessed: photo.aiProcessed,
-      isAIProcessed: isAIProcessed,
-      consentPending: photo.consentPending,
-      hasMaskedChildren: hasMaskedChildren,
-      showEditedVersion: showEditedVersion,
-      editedImageUrl: photo.editedImageUrl
-    })
-    
-    // If showing edited version, use the edited image
-    if (showEditedVersion) {
-      // Use the edited image URL from the photo object
-      imageUrl = photo.editedImageUrl || '/Edited-image.png'
-      console.log('Dashboard: Using edited image:', imageUrl)
-    } else {
-      console.log('Dashboard: Using original image:', imageUrl)
-    }
-    
-    // Fallback: if edited image fails, show original with overlay
-    const fallbackImageUrl = photo.url || photo.currentDisplayUrl
-    
-    // Debug: Check if image URL is valid
-    console.log('Dashboard: Final imageUrl for rendering:', imageUrl)
-    console.log('Dashboard: showEditedVersion:', showEditedVersion)
-    console.log('Dashboard: isAIProcessed:', isAIProcessed)
-    console.log('Dashboard: hasMaskedChildren:', hasMaskedChildren)
-    
-    console.log('Dashboard: Final imageUrl:', imageUrl)
-    console.log('Dashboard: Image display decision:', {
-      isAIProcessed,
-      useMaskedUrl: isAIProcessed && photo.maskedUrl,
-      fallbackUrl: photo.url || photo.currentDisplayUrl,
-      finalChoice: showEditedVersion ? 'edited version (Emma removed)' : 'original image (with Emma)'
+      finalImageUrl: imageUrl
     })
 
     if (imageUrl) {
       return (
         <div className="relative" data-photo-id={photo.id}>
           <img
-            key={`${photo.id}-${showEditedVersion ? 'edited' : 'original'}`}
+            key={`${photo.id}-${hasEditedImage ? 'edited' : 'original'}`}
             src={imageUrl}
             alt={photo.title}
             className="w-full h-48 object-cover"
             onError={(e) => {
               console.error('Dashboard: Image failed to load:', imageUrl)
-              console.error('Dashboard: Error details:', e.target.error)
-              
-              // Only fallback if this is NOT the edited image that just loaded successfully
-              if (showEditedVersion && fallbackImageUrl && !editedImagesLoaded.has(photo.id)) {
-                console.log('Dashboard: Falling back to original image:', fallbackImageUrl)
-                e.target.src = fallbackImageUrl
-              } else {
-                console.log('Dashboard: No fallback available, hiding image')
-                e.target.style.display = 'none'
-              }
-            }}
-            onLoad={() => {
-              console.log('Dashboard: Image loaded successfully:', imageUrl)
-              // Mark that the edited image has loaded successfully
-              if (showEditedVersion) {
-                console.log('Dashboard: Marking edited image as loaded successfully')
-                setEditedImagesLoaded(prev => new Set([...prev, photo.id]))
+              // Simple fallback to original if edited image fails
+              if (hasEditedImage && (photo.url || photo.currentDisplayUrl)) {
+                console.log('Dashboard: Falling back to original image')
+                e.target.src = photo.url || photo.currentDisplayUrl
               }
             }}
           />
           
-          {/* AI Processed Badge */}
-          {isAIProcessed && (
-            <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
-              ✨ AI Edited ({maskedCount})
-            </div>
-          )}
-
-          {/* Success Indicator for Edited Image */}
-          {showEditedVersion && (
+          {/* AI Edited Badge */}
+          {hasEditedImage && (
             <div className="absolute top-4 right-4 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
               ✨ AI Edited
             </div>
