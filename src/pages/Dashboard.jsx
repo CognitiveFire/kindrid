@@ -185,11 +185,16 @@ const Dashboard = () => {
             className="w-full h-48 object-cover"
             onError={(e) => {
               console.error('Dashboard: Image failed to load:', imageUrl)
+              console.error('Dashboard: Error target:', e.target)
+              console.error('Dashboard: Error event:', e)
               // Simple fallback to original if edited image fails
               if (hasEditedImage && (photo.url || photo.currentDisplayUrl)) {
                 console.log('Dashboard: Falling back to original image')
                 e.target.src = photo.url || photo.currentDisplayUrl
               }
+            }}
+            onLoad={() => {
+              console.log('Dashboard: Image loaded successfully:', imageUrl)
             }}
           />
           
