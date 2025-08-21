@@ -176,6 +176,10 @@ const Dashboard = () => {
     })
 
     if (imageUrl) {
+      console.log('Dashboard: Rendering image with URL:', imageUrl)
+      console.log('Dashboard: Photo ID:', photo.id)
+      console.log('Dashboard: hasEditedImage:', hasEditedImage)
+      
       return (
         <div className="relative" data-photo-id={photo.id}>
           <img
@@ -185,7 +189,13 @@ const Dashboard = () => {
             className="w-full h-48 object-cover"
             onLoad={() => {
               console.log('Dashboard: Image loaded successfully:', imageUrl)
+              console.log('Dashboard: Image element:', e.target)
             }}
+            onError={(e) => {
+              console.error('Dashboard: Image failed to load:', imageUrl)
+              console.error('Dashboard: Error details:', e)
+            }}
+            style={{ border: '2px solid red' }} // Debug: add border to see if element is rendered
           />
           
           {/* AI Edited Badge */}
