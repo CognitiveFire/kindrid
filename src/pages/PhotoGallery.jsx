@@ -206,8 +206,8 @@ const PhotoGallery = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Photo Gallery</h1>
-            <p className="text-gray-600">
+            <h1 className="text-3xl font-bold text-white">Photo Gallery</h1>
+            <p className="text-gray-400">
               {userRole === 'teacher' 
                 ? 'Manage and review all school photos' 
                 : 'View photos featuring your children'
@@ -216,7 +216,7 @@ const PhotoGallery = () => {
           </div>
           <div className="flex items-center space-x-3">
             <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-              userRole === 'teacher' ? 'bg-kindrid-100 text-kindrid-800' : 'bg-green-100 text-green-800'
+              userRole === 'teacher' ? 'bg-green-900 text-green-300' : 'bg-green-900 text-green-300'
             }`}>
               {userRole === 'teacher' ? 'Teacher View' : 'Parent View'}
             </div>
@@ -232,13 +232,13 @@ const PhotoGallery = () => {
               placeholder="Search photos by title, description, or children..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kindrid-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-gray-800 text-white placeholder-gray-400"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kindrid-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-gray-800 text-white"
           >
             <option value="all">All Statuses</option>
             <option value="pending_consent">Pending Consent</option>
@@ -246,13 +246,13 @@ const PhotoGallery = () => {
             <option value="ai_processing">AI Processing</option>
             <option value="ai_failed">AI Failed</option>
           </select>
-          <div className="flex border border-gray-300 rounded-lg">
+          <div className="flex border border-gray-600 rounded-lg">
             <button
               onClick={() => setViewMode('grid')}
               className={`px-3 py-2 text-sm font-medium ${
                 viewMode === 'grid' 
-                  ? 'bg-kindrid-500 text-white' 
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-green-600 text-white' 
+                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
             >
               Grid
@@ -261,8 +261,8 @@ const PhotoGallery = () => {
               onClick={() => setViewMode('list')}
               className={`px-3 py-2 text-sm font-medium ${
                 viewMode === 'list' 
-                  ? 'bg-kindrid-500 text-white' 
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-green-600 text-white' 
+                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
             >
               List
@@ -275,7 +275,7 @@ const PhotoGallery = () => {
       {filteredPhotos.length === 0 ? (
         <div className="text-center py-12">
           <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg">
+          <p className="text-gray-400 text-lg">
             {searchQuery || statusFilter !== 'all' 
               ? 'No photos match your search criteria' 
               : userRole === 'teacher' 
@@ -287,8 +287,8 @@ const PhotoGallery = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPhotos.map((photo) => (
-            <div key={photo.id} className="card">
-              <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg overflow-hidden mb-4 relative group cursor-pointer" onClick={() => handlePhotoEnlarge(photo)}>
+            <div key={photo.id} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <div className="aspect-w-16 aspect-h-9 bg-gray-700 rounded-lg overflow-hidden mb-4 relative group cursor-pointer" onClick={() => handlePhotoEnlarge(photo)}>
                 {renderPhotoImage(photo)}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white text-lg font-semibold">
@@ -299,11 +299,11 @@ const PhotoGallery = () => {
               
               <div className="space-y-3">
                 <div>
-                  <h3 className="font-semibold text-gray-900">{photo.title}</h3>
-                  <p className="text-sm text-gray-600">{photo.description}</p>
+                  <h3 className="font-semibold text-white">{photo.title}</h3>
+                  <p className="text-sm text-gray-300">{photo.description}</p>
                 </div>
                 
-                <div className="text-xs text-gray-500 space-y-1">
+                <div className="text-xs text-gray-400 space-y-1">
                   <p><span className="font-medium">Date:</span> {photo.date}</p>
                   <p><span className="font-medium">Location:</span> {photo.location}</p>
                   <p><span className="font-medium">Teacher:</span> {photo.teacher}</p>
@@ -311,8 +311,8 @@ const PhotoGallery = () => {
                 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Children:</span>
-                    <span className="text-xs text-gray-500">{photo.children.length} total</span>
+                    <span className="text-sm font-medium text-gray-300">Children:</span>
+                    <span className="text-xs text-gray-400">{photo.children.length} total</span>
                   </div>
                   
                   <div className="space-y-1">

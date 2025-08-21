@@ -303,44 +303,44 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-2 text-gray-600">Manage your photos and consent</p>
+          <h1 className="text-3xl font-bold text-white">Dashboard</h1>
+          <p className="mt-2 text-gray-400">Manage your photos and consent</p>
         </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
             <div className="flex items-center space-x-3">
-              <Eye className="w-8 h-8 text-blue-600" />
+              <Eye className="w-8 h-8 text-blue-400" />
               <div>
-                <h3 className="text-lg font-medium text-gray-900">Review Photos</h3>
-                <p className="text-gray-600">Manage consent and review photos</p>
+                <h3 className="text-lg font-medium text-white">Review Photos</h3>
+                <p className="text-gray-400">Manage consent and review photos</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
             <div className="flex items-center space-x-3">
-              <Brain className="w-8 h-8 text-purple-600" />
+              <Brain className="w-8 h-8 text-purple-400" />
               <div>
-                <h3 className="text-lg font-medium text-gray-900">AI Tools</h3>
-                <p className="text-gray-600">AI-powered photo processing</p>
+                <h3 className="text-lg font-medium text-white">AI Tools</h3>
+                <p className="text-gray-400">AI-powered photo processing</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Recent Photos */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="bg-gray-800 rounded-lg border border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-700">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">Recent Photos</h2>
+              <h2 className="text-xl font-semibold text-white">Recent Photos</h2>
               <Link
                 to="/gallery"
-                className="text-kindrid-600 hover:text-kindrid-700 font-medium"
+                className="text-green-400 hover:text-green-300 font-medium"
               >
                 View All
               </Link>
@@ -351,38 +351,38 @@ const Dashboard = () => {
             {userRole === 'teacher' && (
               <button
                 onClick={() => setShowPhotoUpload(true)}
-                className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-center space-x-2 p-4 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors bg-gray-800"
               >
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span className="text-gray-600 text-xl">+</span>
+                <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                  <span className="text-gray-300 text-xl">+</span>
                 </div>
-                <span className="text-gray-600">Upload New Photo</span>
+                <span className="text-gray-300">Upload New Photo</span>
               </button>
             )}
 
             {getPhotosForUser().length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">No photos uploaded yet.</p>
+                <p className="text-gray-400">No photos uploaded yet.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                 {getPhotosForUser().map((photo) => (
-                  <div key={photo.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <div className="aspect-w-16 aspect-h-9 bg-gray-100">{renderPhotoImage(photo)}</div>
+                  <div key={photo.id} className="bg-gray-700 border border-gray-600 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div className="aspect-w-16 aspect-h-9 bg-gray-600">{renderPhotoImage(photo)}</div>
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium text-gray-900 truncate">{photo.title}</h3>
+                        <h3 className="font-medium text-white truncate">{photo.title}</h3>
                         {getStatusIcon(photo.status)}
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{photo.description}</p>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
+                      <p className="text-sm text-gray-300 mb-2">{photo.description}</p>
+                      <div className="flex items-center justify-between text-xs text-gray-400">
                         <span>{photo.date}</span>
                         <span>{getStatusText(photo.status)}</span>
                       </div>
                       
                       {photo.status === 'pending_consent' && canManageConsent(photo) && (
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          <p className="text-xs text-gray-600 mb-2">
+                        <div className="mt-3 pt-3 border-t border-gray-600">
+                          <p className="text-xs text-gray-400 mb-2">
                             Pending consent for: {photo.consentPending.join(', ')}
                           </p>
                           <div className="flex space-x-2">
@@ -393,14 +393,14 @@ const Dashboard = () => {
                                     giveConsent(photo.id, childName)
                                   })
                                 }}
-                                className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
+                                className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded hover:bg-green-800"
                               >
                                 Approve All
                               </button>
                             )}
                             <button
                               onClick={() => setConsentPhoto(photo)}
-                              className="text-xs bg-kindrid-100 text-kindrid-700 px-2 py-1 rounded hover:bg-kindrid-200"
+                              className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded hover:bg-green-800"
                             >
                               Review
                             </button>
@@ -409,17 +409,17 @@ const Dashboard = () => {
                       )}
 
                       {userRole === 'teacher' && (
-                        <div className="mt-3 pt-3 border-t border-gray-100 flex space-x-2">
+                        <div className="mt-3 pt-3 border-t border-gray-600 flex space-x-2">
                           <button
                             onClick={() => handleEditPhoto(photo)}
-                            className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 flex items-center"
+                            className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded hover:bg-blue-800 flex items-center"
                           >
                             <Edit className="w-3 h-3 mr-1" />
                             Edit
                           </button>
                           <button
                             onClick={() => handleDeletePhoto(photo)}
-                            className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center"
+                            className="text-xs bg-red-900 text-red-300 px-2 py-1 rounded hover:bg-red-800 flex items-center"
                           >
                             <Trash2 className="w-3 h-3 mr-1" />
                             Delete
@@ -428,8 +428,8 @@ const Dashboard = () => {
                       )}
 
                       {photo.status === 'ai_processing' && (
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          <div className="flex items-center space-x-2 text-xs text-purple-600">
+                        <div className="mt-3 pt-3 border-t border-gray-600">
+                          <div className="flex items-center space-x-2 text-xs text-purple-400">
                             <Brain className="w-3 h-3" />
                             <span>AI Processing...</span>
                           </div>
