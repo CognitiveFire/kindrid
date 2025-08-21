@@ -187,11 +187,9 @@ const Dashboard = () => {
               console.error('Dashboard: Image failed to load:', imageUrl)
               console.error('Dashboard: Error target:', e.target)
               console.error('Dashboard: Error event:', e)
-              // Simple fallback to original if edited image fails
-              if (hasEditedImage && (photo.url || photo.currentDisplayUrl)) {
-                console.log('Dashboard: Falling back to original image')
-                e.target.src = photo.url || photo.currentDisplayUrl
-              }
+              
+              // For debugging: don't fallback immediately, let's see what happens
+              console.log('Dashboard: Image error - not falling back, letting edited image load')
             }}
             onLoad={() => {
               console.log('Dashboard: Image loaded successfully:', imageUrl)

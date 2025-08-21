@@ -137,8 +137,13 @@ const PhotoGallery = () => {
                 console.error('PhotoGallery: Image failed to load:', imageUrl)
                 // Fallback to original image if edited image fails
                 if (hasEditedImage && (photo.url || photo.currentDisplayUrl)) {
-                  console.log('PhotoGallery: Falling back to original image')
-                  e.target.src = photo.url || photo.currentDisplayUrl
+                  // Add a small delay to prevent race conditions
+                  setTimeout(() => {
+                    if (e.target.src === imageUrl) { // Only fallback if still trying to load edited image
+                      console.log('PhotoGallery: Falling back to original image after delay')
+                      e.target.src = photo.url || photo.currentDisplayUrl
+                    }
+                  }, 100)
                 }
               }}
             />
