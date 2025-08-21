@@ -183,14 +183,6 @@ const Dashboard = () => {
             src={imageUrl}
             alt={photo.title}
             className="w-full h-48 object-cover"
-            onError={(e) => {
-              console.error('Dashboard: Image failed to load:', imageUrl)
-              console.error('Dashboard: Error target:', e.target)
-              console.error('Dashboard: Error event:', e)
-              
-              // For debugging: don't fallback immediately, let's see what happens
-              console.log('Dashboard: Image error - not falling back, letting edited image load')
-            }}
             onLoad={() => {
               console.log('Dashboard: Image loaded successfully:', imageUrl)
             }}
