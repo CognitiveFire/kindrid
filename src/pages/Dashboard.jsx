@@ -242,14 +242,13 @@ const Dashboard = () => {
             onError={(e) => {
               console.error('Dashboard: Image failed to load:', imageUrl)
               console.error('Dashboard: Error details:', e.target.error)
-              console.error('Dashboard: Image element:', e.target)
               
               // Only fallback if this is NOT the edited image that just loaded successfully
               if (showEditedVersion && fallbackImageUrl && !editedImagesLoaded.has(photo.id)) {
                 console.log('Dashboard: Falling back to original image:', fallbackImageUrl)
                 e.target.src = fallbackImageUrl
-                e.target.style.display = 'block'
               } else {
+                console.log('Dashboard: No fallback available, hiding image')
                 e.target.style.display = 'none'
               }
             }}
@@ -612,7 +611,7 @@ const Dashboard = () => {
             
             <div className="relative flex justify-center">
               <img
-                src={enlargedPhoto.maskedUrl || enlargedPhoto.url}
+                src={enlargedPhoto.editedImageUrl || enlargedPhoto.url || enlargedPhoto.currentDisplayUrl}
                 alt={enlargedPhoto.title}
                 className="max-w-full max-h-[80vh] object-contain"
               />

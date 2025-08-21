@@ -145,9 +145,18 @@ const PhotoGallery = () => {
         return (
           <div className="relative">
             <img 
+              key={`${photo.id}-${showEditedVersion ? 'edited' : 'original'}`}
               src={imageUrl} 
               alt={photo.title}
               className="w-full h-48 object-cover"
+              onError={(e) => {
+                console.error('PhotoGallery: Image failed to load:', imageUrl)
+                // Fallback to original image if edited image fails
+                if (showEditedVersion && (photo.url || photo.currentDisplayUrl)) {
+                  console.log('PhotoGallery: Falling back to original image')
+                  e.target.src = photo.url || photo.currentDisplayUrl
+                }
+              }}
             />
             {/* AI Edited Badge */}
             {showEditedVersion && (
@@ -471,15 +480,15 @@ const PhotoGallery = () => {
             
             <div className="relative flex justify-center">
               <img
-                src={enlargedPhoto.maskedUrl || enlargedPhoto.url}
+                src={enlargedPhoto.editedImageUrl || enlargedPhoto.url || enlargedPhoto.currentDisplayUrl}
                 alt={enlargedPhoto.title || 'Enlarged Photo'}
                 className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
               />
               
-              {/* AI Masked Badge */}
-              {enlargedPhoto.maskedUrl && (
-                <div className="absolute top-4 left-4 bg-purple-600 text-white px-4 py-2 rounded-full text-lg font-semibold">
-                  🎭 AI Masked
+              {/* AI Edited Badge */}
+              {enlargedPhoto.editedImageUrl && (
+                <div className="absolute top-4 left-4 bg-green-600 text-white px-4 py-2 rounded-full text-lg font-semibold">
+                  ✨ AI Edited
                 </div>
               )}
               
